@@ -1,0 +1,25 @@
+  - platform: mqtt
+    state_topic: "home/sensor/hallway/temperature"
+    name: "Hallway"
+    unit_of_measurement: '°C'
+  - platform: mqtt
+    state_topic: "home/sensor/hallway/humidity"
+    name: "Hallway_h"
+    unit_of_measurement: '%'
+  - platform: mqtt
+    state_topic: "home/sensor/landing/temperature"
+    name: "Landing"
+    unit_of_measurement: '°C'
+  - platform: mqtt
+    state_topic: "home/sensor/landing/humidity"
+    name: "Landing_h"
+    unit_of_measurement: '%'
+  - platform: mqtt
+    state_topic: "home/sensor/hutch/temperature"
+    name: "Hutch"
+    unit_of_measurement: '°C'
+    scan_interval: 60
+  - platform: mqtt
+    state_topic: "home/sensor/hutch/humidity"
+    name: "Hutch_h"
+    unit_of_measurement: '%'

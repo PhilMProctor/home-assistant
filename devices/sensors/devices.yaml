@@ -1,0 +1,17 @@
+  - platform: template
+    sensors:
+      printer:
+        value_template: '{% if is_state("device_tracker.b0e89202ccce", "home") %}Online{% else %}Offline{% endif %}'
+        friendly_name: 'Printer'
+
+      nathan_xbox:
+        value_template: '{% if is_state("device_tracker.281878898722", "home") %}Online{% else %}Offline{% endif %}'
+        friendly_name: 'Nathan XBOX'
+
+      benjamin_xbox:
+        value_template: '{% if is_state("device_tracker.5882a829daf1", "home") %}Online{% else %}Offline{% endif %}'
+        friendly_name: 'Benjamin XBOX'
+
+      admonitrix_ping:
+        value_template: '{% if is_state("device_tracker.admonitrix", "home") %}"Correct IP"{% else %}"Incorrect IP"{% endif %}'
+        friendly_name: 'Admonitrix'

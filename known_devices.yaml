@@ -1,0 +1,280 @@
+
+b0e89202ccce:
+  hide_if_away: false
+  mac: B0:E8:92:02:CC:CE
+  name: Printer
+  picture:
+  track: true
+  vendor: Seiko Epson Corporation
+
+18fe349d1059:
+  hide_if_away: false
+  mac: 18:FE:34:9D:10:59
+  name: ESP1
+  picture:
+  track: true
+  vendor: Espressif Inc.
+
+18fe34dabbd5:
+  hide_if_away: false
+  mac: 18:FE:34:DA:BB:D5
+  name: ESP3
+  picture:
+  track: true
+  vendor: Espressif Inc.
+
+18fe34da56a9:
+  hide_if_away: false
+  mac: 18:FE:34:DA:56:A9
+  name: ESP2
+  picture:
+  track: true
+  vendor: Espressif Inc.
+
+94d85915ae3d:
+  hide_if_away: false
+  mac: 94:D8:59:15:AE:3D
+  name: 'Sandras Phone'
+  picture:
+  track: true
+  vendor: TCT mobile ltd
+
+bcf2afd4cc3b:
+  hide_if_away: false
+  mac: BC:F2:AF:D4:CC:3B
+  name: hubble_s
+  picture:
+  track: true
+  vendor: devolo AG
+
+502e5ce5a60a:
+  hide_if_away: false
+  mac: 50:2E:5C:E5:A6:0A
+  name: 'Nexus 9'
+  picture:
+  track: true
+  vendor: HTC Corporation
+
+a44e31486754:
+  hide_if_away: false
+  mac: A4:4E:31:48:67:54
+  name: a44e31486754
+  picture:
+  track: true
+  vendor: Intel Corporate
+
+e0cb1db136d2:
+  hide_if_away: false
+  mac: E0:CB:1D:B1:36:D2
+  name: e0cb1db136d2
+  picture:
+  track: true
+  vendor: Private
+
+2c54cfe5cea6:
+  hide_if_away: false
+  mac: 2C:54:CF:E5:CE:A6
+  name: 'Nexus 5'
+  picture:
+  track: true
+  vendor: LG Electronics (Mobile Communications)
+
+008ef2194ac7:
+  hide_if_away: false
+  mac: 00:8E:F2:19:4A:C7
+  name: 008ef2194ac7
+  picture:
+  track: true
+  vendor: NETGEAR
+
+0090a96df5a7:
+  hide_if_away: false
+  mac: 00:90:A9:6D:F5:A7
+  name: 'NAS Server'
+  picture:
+  track: true
+  vendor: WESTERN DIGITAL
+
+bcf2afb6b7af:
+  hide_if_away: false
+  mac: BC:F2:AF:B6:B7:AF
+  name: hubble_h
+  picture:
+  track: true
+  vendor: devolo AG
+
+'445829235164':
+  hide_if_away: false
+  mac: 44:58:29:23:51:64
+  name: '445829235164'
+  picture:
+  track: true
+  vendor: Cisco SPVTG
+
+b827eb5fe5b2:
+  hide_if_away: false
+  mac: B8:27:EB:5F:E5:B2
+  name: Admonitrix
+  picture:
+  track: true
+  vendor: Raspberry Pi Foundation
+
+28d24422dabb:
+  hide_if_away: false
+  mac: 28:D2:44:22:DA:BB
+  name: work_laptop_wifi
+  picture:
+  track: false
+  vendor: LCFC(HeFei) Electronics Technology Co., Ltd.
+
+606720749cc8:
+  hide_if_away: false
+  mac: 60:67:20:74:9C:C8
+  name: 606720749cc8
+  picture:
+  track: true
+  vendor: Intel Corporate
+
+owntracks_philphone:
+  hide_if_away: false
+  mac:
+  name: Phil
+  picture:
+  track: true
+  vendor:
+
+owntracks_harpian:
+  hide_if_away: false
+  mac:
+  name: owntracks
+  picture:
+  track: false
+  vendor:
+
+owntracks_nathanphone:
+  hide_if_away: false
+  mac:
+  name: Nathan
+  picture:
+  track: true
+  vendor:
+
+owntracks_sandraphone:
+  hide_if_away: false
+  mac:
+  name: Sandra
+  picture:
+  track: true
+  vendor:
+
+a47733c0b8a6:
+  hide_if_away: false
+  mac: A4:77:33:C0:B8:A6
+  name: ChromeCast
+  picture:
+  track: true
+  vendor: Google, Inc.
+
+f4f524cc78e6:
+  hide_if_away: false
+  mac: F4:F5:24:CC:78:E6
+  name: 'Work Phone'
+  picture:
+  track: true
+  vendor: Motorola Mobility LLC, a Lenovo Company
+
+54ef925dad48:
+  hide_if_away: false
+  mac: 54:EF:92:5D:AD:48
+  name: 'Benjamin Tablet'
+  picture:
+  track: true
+  vendor: Shenzhen Elink Technology Co., LTD
+
+f4f524cc82d3:
+  hide_if_away: false
+  mac: F4:F5:24:CC:82:D3
+  name: 'Nathans Phone'
+  picture:
+  track: true
+  vendor: Motorola Mobility LLC, a Lenovo Company
+
+5882a829daf1:
+  hide_if_away: false
+  mac: 58:82:A8:29:DA:F1
+  name: 'Benjamin XBOX'
+  picture:
+  track: true
+  vendor: Microsoft
+
+'281878898722':
+  hide_if_away: false
+  mac: 28:18:78:89:87:22
+  name: 'Nathan XBOX'
+  picture:
+  track: true
+  vendor: Microsoft Corporation
+
+f0a225b6f267:
+  hide_if_away: false
+  mac: F0:A2:25:B6:F2:67
+  name: f0a225b6f267
+  picture:
+  track: true
+  vendor: Private
+
+34e6adb3842c:
+  hide_if_away: false
+  mac: 34:E6:AD:B3:84:2C
+  name: 34e6adb3842c
+  picture:
+  track: true
+  vendor: Intel Corporate
+
+28ef0182c227:
+  hide_if_away: false
+  mac: 28:EF:01:82:C2:27
+  name: 28ef0182c227
+  picture:
+  track: true
+  vendor: Private
+
+owntracks_benjamin_tablet:
+  hide_if_away: false
+  mac:
+  name: owntracks
+  picture:
+  track: true
+  vendor:
+
+admonitrix:
+  hide_if_away: false
+  mac:
+  name: admonitrix
+  picture:
+  track: true
+  vendor:
+
+e8de270f4a0f:
+  hide_if_away: false
+  mac: E8:DE:27:0F:4A:0F
+  name: e8de270f4a0f
+  picture:
+  track: true
+  vendor: TP-LINK TECHNOLOGIES CO.,LTD.
+
+f4f1e1d25cab:
+  hide_if_away: false
+  mac: F4:F1:E1:D2:5C:AB
+  name: f4f1e1d25cab
+  picture:
+  track: true
+  vendor: Motorola Mobility LLC, a Lenovo Company
+
+3010b39f87d9:
+  hide_if_away: false
+  mac: 30:10:B3:9F:87:D9
+  name: 3010b39f87d9
+  picture:
+  track: true
+  vendor: Liteon Technology Corporation

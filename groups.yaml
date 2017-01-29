@@ -1,0 +1,146 @@
+  default_view:
+    name: Home
+    icon: mdi:home
+    view: yes
+    entities:
+      - group.home_mon
+      - group.scenes
+      - group.family
+      - group.battery
+    
+  family:
+    name: Family
+    view: no
+    icon: mdi:account-multiple
+    entities:
+      - device_tracker.owntracks_philphone
+      - device_tracker.owntracks_sandraphone
+      - device_tracker.owntracks_nathanphone
+
+  battery:
+    name: 'Battery State'
+    view: no
+    entities:
+      - sensor.phils_phone
+      - sensor.sandras_phone
+      - sensor.nathans_phone
+      - sensor.benjamins_tablet
+
+  home_mon:
+    name: Environment
+    view: no
+    entities:
+      - sensor.hallway
+      - sensor.hallway_h
+      - sensor.landing
+      - sensor.landing_h
+      - sensor.hutch
+      - sensor.hutch_h
+
+  sensor_network:
+    name: 'Sensor Network'
+    entities:
+      - sensor.esp1
+      - sensor.esp2
+      - sensor.esp3
+
+  all_sensors:
+    name: Sensors
+    entities:
+      - device_tracker.18fe349d1059
+      - device_tracker.18fe34da56a9
+      - device_tracker.18fe34dabbd5
+
+  nodes:
+    name: Nodes
+    entities:
+      - sensor.admonitrix
+
+  wifi:
+    name: 'Wifi Network'
+    entities:
+      - sensor.hubble_s
+      - sensor.hubble_h
+
+  eth:
+    name: 'Ethernet Network'
+    entities:
+      - device_tracker.admonitrix
+
+  infrastructure:
+    view: yes
+    name: Infrastructure
+    entities:
+      - group.sensor_network
+      - group.nodes
+      - group.wifi
+      - group.eth
+      - group.speedtest
+
+  devices:
+    name: Devices
+    entities:
+      - sensor.printer
+      - sensor.benjamin_xbox
+      - sensor.nathan_xbox
+      - device_tracker.2c54cfe5cea6
+      - device_tracker.502e5ce5a60a
+      - device_tracker.f4f524cc82d3
+      - device_tracker.94d85915ae3d
+      - device_tracker.54ef925dad48
+
+  speedtest:
+    name: SpeedTest
+    entities:
+      - sensor.speedtest_ping
+      - sensor.speedtest_download
+      - sensor.speedtest_upload
+
+  device_status:
+    view: yes
+    name: 'Device Status'
+    entities:
+      - group.devices
+
+  automation:
+    view: yes
+    name: 'Automation'
+    entities:
+      - group.triggers
+      - group.heating
+      - group.lighting
+      - group.scenes
+
+  triggers:
+    view: no
+    name: Triggers
+    entities:
+      - automation.hutch_heating_on
+      - automation.hutch_heating_off
+      - automation.house_heating_on
+      - automation.house_heating_off
+      - automation.lounge_lights_on_in_the_evening
+
+  heating:
+    view: no
+    name: 'Heating'
+    entities:
+      - switch.hutch_heater
+      - switch.landing_heater
+      - switch.heating_switch
+
+  lighting:
+    view: no
+    name: 'Lighting'
+    entities:
+      - switch.lounge_lights
+
+  scenes:
+    view: no
+    name: 'Scenes'
+    entities:
+      - scene.bedtime
+      - scene.in_the_hutch
+      - scene.out_of_the_hutch
+      - scene.house_heating_on
+      - scene.house_heating_off

@@ -1,0 +1,126 @@
+homeassistant:
+  name: Home
+  latitude: !secret latitude
+  longitude: !secret longitude
+  elevation: 20
+  unit_system: metric
+  time_zone: Europe/London
+  customize: !include customize.yaml
+
+frontend:
+
+http:
+  api_password: !secret http_password
+  ssl_certificate: /etc/letsencrypt/live/hass227.duckdns.org/fullchain.pem
+  ssl_key: /etc/letsencrypt/live/hass227.duckdns.org/privkey.pem
+  trusted_networks:
+    - 10.44.3.0/24
+
+# Checks for available updates
+updater:
+
+# Discover some devices automatically
+discovery:
+
+# Allows you to issue voice commands from the frontend in enabled browsers
+conversation:
+
+# Enables support for tracking state changes over time.
+history:
+
+# View all events in a logbook
+logbook:
+
+# Track the sun
+sun:
+
+mqtt:
+  broker: 10.44.3.33
+  port: 8883
+  client_id: home-assistant-1
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+
+sensor: !include_dir_merge_list devices/sensors
+switch: !include_dir_merge_list devices/switches
+automation: !include_dir_merge_list automation
+scene: !include scenes.yaml
+
+zone:
+  name: Home
+  latitude: !secret latitude
+  longitude: !secret longitude
+  radius: 100
+  icon: mdi:home
+
+zone 2:
+  name: UCEA
+  latitude: 53.276379
+  longitude:  -2.907707
+  radius: 100
+  icon: mdi:school
+
+zone 3:
+  name: Gym
+  latitude: 53.263738
+  longitude: -2.891398
+  radius: 200
+  icon: mdi:run
+
+zone 4:
+  name: Work
+  latitude: 53.347792
+  longitude: -2.878179
+  radius: 200
+  icon: mdi:briefcase
+
+zone 5:
+  name: Lodge
+  latitude: 52.867931
+  longitude: -3.908915
+  radius: 200
+  icon: mdi:home
+  
+panel_custom:
+  - name: hello
+    sidebar_title: Hello World
+    sidebar_icon: mdi:hand-pointing-right
+    url_path: hello
+    config:
+      title: hello
+
+notify:
+  - name: SMS
+    platform: twilio_sms
+    account_sid: !secret twilio_sid
+    auth_token: !secret twilio_token
+    from_number: !secret my_number
+
+  - name: pushbullet
+    platform: pushbullet
+    api_key: !secret pb_api
+
+#input_slider: !include input_sliders.yaml
+
+device_tracker:
+  - platform: owntracks
+  - platform: nmap_tracker
+    hosts: 10.44.3.0/24
+    scan_options: " --privileged -sP"
+    home_interval: 10
+  - platform: ping
+    hosts:
+      admonitrix: 10.44.3.15
+    count: 3
+
+group: !include groups.yaml
+
+google:
+  client_id: !secret g_client_id
+  client_secret: !secret g_client_secret
+
+script:
+  example_script:
+    sequence:
+      - service: device_tracker.see
+        entity_id: device_tracker.18fe34dabbd5

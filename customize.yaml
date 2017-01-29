@@ -1,0 +1,65 @@
+sensor.esp1:
+  icon: mdi:wifi
+
+sensor.esp2:
+  icon: mdi:wifi
+
+sensor.esp3:
+  icon: mdi:wifi
+
+sensor.hallway_h:
+  icon: mdi:water
+
+sensor.hutch_h:
+  icon: mdi:water
+
+sensor.landing_h:
+  icon: mdi:water
+
+sensor.admonitrix:
+  icon: mdi:raspberrypi
+
+sensor.hubble_s:
+  icon: mdi:access-point-network
+
+sensor.hubble_h:
+  icon: mdi:access-point-network
+
+sensor.printer:
+  icon: mdi:printer
+
+sensor.benjamin_xbox:
+  icon: mdi:windows
+
+sensor.nathan_xbox:
+  icon: mdi:windows
+
+sensor.phils_phone:
+  icon: mdi:battery
+
+sensor.sandras_phone:
+  icon: mdi:battery
+
+sensor.nathans_phone:
+  icon: mdi:battery
+
+sensor.benjamins_tablet:
+  icon: mdi:battery
+
+device_tracker.2c54cfe5cea6:
+  icon: mdi:cellphone
+device_tracker.502e5ce5a60a:
+  icon: mdi:tablet
+device_tracker.f4f524cc82d3:
+  icon: mdi:cellphone
+device_tracker.94d85915ae3d:
+  icon: mdi:cellphone
+device_tracker.54ef925dad48:
+   icon: mdi:tablet
+
+sensor.speedtest_download:
+  icon: mdi:download
+sensor.speedtest_upload:
+  icon: mdi:upload
+sensor.speedtest_ping:
+  icon: mdi:speedometer

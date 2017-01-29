@@ -1,0 +1,40 @@
+  - name: Bedtime
+    entities:
+      switch.lounge_lights: 
+        state: off
+      automation.lounge_lights_on_in_the_evening:
+        state: off
+
+  - name: 'In the Hutch'
+    entities:
+      automation.hutch_heating_on:
+        state: on
+      automation.hutch_heating_off:
+        state: on
+      switch.hutch_heater:
+        state: on
+
+  - name: 'Out of the Hutch'
+    entities:
+      automation.hutch_heating_on:
+        state: off
+      automation.hutch_heating_off:
+        state: off
+      switch.hutch_heater:
+        state: off
+
+  - name: 'House heating ON'
+    entities:
+      automation.house_heating_on:
+        state: on
+      automation.house_heating_off:
+        state: on
+
+  - name: 'House heating OFF'
+    entities:
+      automation.house_heating_on:
+        state: off
+      automation.house_heating_off:
+        state: off
+      switch.heating_switch:
+        state: off

@@ -1,0 +1,46 @@
+- alias: 'Hutch heating on'
+  initial_state: false
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.hutch
+      below: 17
+
+  action:
+    service: switch.turn_on
+    entity_id: switch.hutch_heater
+
+- alias: 'Hutch heating off'
+  initial_state: false
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.hutch
+      above: 19
+
+  action:
+    service: switch.turn_off
+    entity_id: switch.hutch_heater    
+
+- alias: 'House heating on'
+  initial_state: true
+  trigger:
+    - platform: state
+      entity_id: calendar.hass_control_heating
+      state: 'on'
+  condition:
+    - condition: state
+      entity_id: group.family
+      state: 'home'
+  action:
+    service: switch.turn_on
+    entity_id: switch.heating_switch
+
+- alias: 'House heating off'
+  initial_state: true
+  trigger:
+    - platform: state
+      entity_id: calendar.hass_control_heating
+      state: 'off'
+  action:
+    service: switch.turn_off
+    entity_id: switch.heating_switch
+

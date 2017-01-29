@@ -1,0 +1,9 @@
+  - platform: mqtt
+    name: "Heating Switch"
+    state_topic: "home/switch/heating/switch1/set"
+    command_topic: "home/switch/heating/switch1/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: false
+    qos: 0
+    retain: true
