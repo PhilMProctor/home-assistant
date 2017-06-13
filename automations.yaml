@@ -1,0 +1,197 @@
+- id: auto01
+  alias: "Update Available Notification"
+  initial_state: 'on'
+  trigger:
+    platform: state
+    entity_id: updater.updater
+  action:
+    - service: notify.pushbullet
+      data:
+        message: "HomeAssistant {{ states('updater.updater') }} is now available"
+        title: "Update HASS"
+- id: auto02
+  alias: 'Heating Thermostat State Selector'
+  initial_state: false
+  trigger:
+    - platform: mqtt
+      topic: home/switch/house/away/set
+  action:
+    service: input_select.select_option
+    data_template:
+      entity_id: input_select.heating_thermostat_state
+      option: '{{ trigger.payload }}'
+
+- id: auto03
+  alias: 'Set Heating Thermostat State On'
+  trigger:
+    platform: state
+    entity_id: input_select.heating_thermostat_state
+  condition:
+    condition: state
+    entity_id: input_select.heating_thermostat_state
+    state: 'On'
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: home/switch/house/away/set
+        retain: true
+        payload: '{{ states.input_select.heating_thermostat_state.state }}'
+    - service: climate.set_temperature
+      data:
+        entity_id: climate.house
+        temperature: 13
+
+- id: auto04
+  alias: 'Set Heating Thermostat State Off'
+  trigger:
+    platform: state
+    entity_id: input_select.heating_thermostat_state
+  condition:
+    condition: state
+    entity_id: input_select.heating_thermostat_state
+    state: 'Off'
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: home/switch/house/away/set
+        retain: true
+        payload: '{{ states.input_select.heating_thermostat_state.state }}'
+    - service: climate.set_temperature
+      data:
+        entity_id: climate.house
+        temperature: 18.5
+
+- id: auto05
+  alias: 'Hutch Thermostat State Selector'
+  initial_state: false
+  trigger:
+    - platform: mqtt
+      topic: home/switch/hutch/away/set
+  action:
+    service: input_select.select_option
+    data_template:
+      entity_id: input_select.hutch_thermostat_state
+      option: '{{ trigger.payload }}'
+
+- id: auto06
+  alias: 'Set Hutch Thermostat State On'
+  trigger:
+    platform: state
+    entity_id: input_select.hutch_thermostat_state
+  condition:
+    condition: state
+    entity_id: input_select.hutch_thermostat_state
+    state: 'On'
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: home/switch/hutch/away/set
+        retain: true
+        payload: '{{ states.input_select.hutch_thermostat_state.state }}'
+    - service: climate.set_temperature
+      data:
+        entity_id: climate.hutch
+        temperature: 1
+
+- id: auto07
+  alias: 'Set Hutch Thermostat State Off'
+  trigger:
+    platform: state
+    entity_id: input_select.hutch_thermostat_state
+  condition:
+    condition: state
+    entity_id: input_select.hutch_thermostat_state
+    state: 'Off'
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: home/switch/hutch/away/set
+        retain: true
+        payload: '{{ states.input_select.hutch_thermostat_state.state }}'
+    - service: climate.set_temperature
+      data:
+        entity_id: climate.hutch
+        temperature: 18.5
+
+- id: auto08
+  alias: 'House Heating 1 On'
+  initial_state: true
+  trigger:
+    platform: state
+    entity_id: calendar.hass_control_heating1
+    state: 'On'
+  action:
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.heating_thermostat_state
+        option: Off
+
+- id: auto09
+  alias: 'House Heating 1 Off'
+  initial_state: true
+  trigger:
+    platform: state
+    entity_id: calendar.hass_control_heating1
+    state: 'Off'
+  action:
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.heating_thermostat_state
+        option: On
+
+- id: auto10
+  alias: 'House Heating 2 On'
+  initial_state: true
+  trigger:
+    platform: state
+    entity_id: calendar.hass_control_heating2
+    state: 'On'
+  action:
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.heating_thermostat_state
+        option: Off
+
+- id: auto11
+  alias: 'House Heating 2 Off'
+  initial_state: true
+  trigger:
+    platform: state
+    entity_id: calendar.hass_control_heating1
+    state: 'Off'
+  action:
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.heating_thermostat_state
+        option: On
+
+- id: auto12
+  alias: 'Lounge lights on in the evening'
+  trigger:
+    - platform: sun
+      event: sunset
+      offset: '-00:15:00'
+  action:
+    service: switch.turn_on
+    entity_id: switch.lounge_lights
+
+- id: auto13
+  alias: 'Random - Lounge Lights Off'
+  trigger:
+  - platform: time
+    after: '23:00:00'
+  condition:
+  - condition: state
+    entity_id: group.family
+    state: 'not_home'
+  action:
+  - delay: '{{ ((range(0, 1) | random) | int) ~ ":" ~ ((range(5, 55) | random) | int)  ~ ":" ~  ((range(5, 55) | random) | int) }}'
+
+- id: auto14
+  alias: 'Reset lights automation'
+  trigger:
+    platform: time
+    after: '07:15:00'
+  action:
+    service: automation.turn_on
+    entity_id: automation.lounge_lights_on_in_the_evening

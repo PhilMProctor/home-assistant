@@ -1,0 +1,36 @@
+  house_heat_on_hr:
+    name: 'Heat On Hour'
+    min: 00
+    max: 23
+    initial: 06
+    step: 1
+    icon: mdi:toggle-switch
+    unit_of_measurement: 'Hours'
+
+  house_heat_on_min:
+    name: 'Heat On Min'
+    min: 00
+    max: 45
+    initial: 00
+    step: 15
+    icon: mdi:toggle-switch-off
+    unit_of_measurement: 'Min'
+
+  house_heat_off_hr:
+    name: 'Heat Off Hour'
+    min: 00
+    max: 23
+    initial: 06
+    step: 1
+    icon: mdi:toggle-switch
+    unit_of_measurement: 'Hours'
+
+  house_heat_off_min:
+    name: 'Heat Off Min'
+    min: 00
+    max: 45
+    initial: 00
+    step: 15
+    icon: mdi:toggle-switch-off
+    unit_of_measurement: 'Min'
+

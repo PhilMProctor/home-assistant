@@ -1,0 +1,19 @@
+  - platform: mqtt
+    name: "Lounge Lights"
+    state_topic: "home/switch/lounge/switch1/set"
+    command_topic: "home/switch/lounge/switch1/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: false
+    qos: 0
+    retain: true
+
+  - platform: mqtt
+    name: "Garage Light"
+    state_topic: "home/switch/garage/switch1/set"
+    command_topic: "home/switch/garage/switch1/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: false
+    qos: 0
+    retain: true
