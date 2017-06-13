@@ -57,18 +57,14 @@ else:
 
 VERSION_MAJOR=1
 VERSION_MINOR=2
-VERSION_REVISION=0
+VERSION_REVISION=3
 VERSION_NUMBER=(VERSION_MAJOR*1000000+VERSION_MINOR*1000+VERSION_REVISION)
 
 MQTTv31 = 3
 MQTTv311 = 4
 
-if sys.version_info[0] < 3:
-    PROTOCOL_NAMEv31 = "MQIsdp"
-    PROTOCOL_NAMEv311 = "MQTT"
-else:
-    PROTOCOL_NAMEv31 = b"MQIsdp"
-    PROTOCOL_NAMEv311 = b"MQTT"
+PROTOCOL_NAMEv31 = "MQIsdp"
+PROTOCOL_NAMEv311 = "MQTT"
 
 # Message types
 CONNECT = 0x10
@@ -142,6 +138,11 @@ if sys.version_info[0] < 3:
     sockpair_data = "0"
 else:
     sockpair_data = b"0"
+
+
+class WebsocketConnectionError(ValueError):
+    pass
+
 
 def error_string(mqtt_errno):
     """Return the error string associated with an mqtt error number."""
@@ -347,22 +348,35 @@ class MQTTMessage:
 
     Members:
 
-    topic : String. topic that the message was published on.
+    topic : String/bytes. topic that the message was published on.
     payload : String/bytes the message payload.
     qos : Integer. The message Quality of Service 0, 1 or 2.
     retain : Boolean. If true, the message is a retained message and not fresh.
     mid : Integer. The message id.
+
+    On Python 3, topic must be bytes.
     """
     def __init__(self, mid=0, topic=""):
         self.timestamp = 0
         self.state = mqtt_ms_invalid
         self.dup = False
         self.mid = mid
-        self.topic = topic
+        self._topic = topic
         self.payload = None
         self.qos = 0
         self.retain = False
         self.info = MQTTMessageInfo(mid)
+
+    @property
+    def topic(self):
+        if sys.version_info[0] >= 3:
+            return self._topic.decode('utf-8')
+        else:
+            return self._topic
+
+    @topic.setter
+    def topic(self, value):
+        self._topic = value
 
 
 class Client(object):
@@ -818,7 +832,10 @@ class Client(object):
                 ca_certs=self._tls_ca_certs,
                 cert_reqs=self._tls_cert_reqs,
                 ssl_version=self._tls_version,
-                ciphers=self._tls_ciphers)
+                ciphers=self._tls_ciphers,
+                do_handshake_on_connect=False)
+            self._ssl.settimeout(self._keepalive)
+            self._ssl.do_handshake()
 
             if self._tls_insecure is False:
                 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 2):
@@ -828,8 +845,10 @@ class Client(object):
 
         if self._transport == "websockets":
             if self._tls_ca_certs is not None:
+                self._ssl.settimeout(self._keepalive)
                 self._ssl = WebsocketWrapper(self._ssl, self._host, self._port, True)
             else:
+                sock.settimeout(self._keepalive)
                 sock = WebsocketWrapper(sock, self._host, self._port, False)
 
         self._sock = sock
@@ -875,6 +894,16 @@ class Client(object):
         self._out_packet_mutex.release()
         self._current_out_packet_mutex.release()
 
+        # used to check if there are any bytes left in the ssl socket
+        pending_bytes = 0
+
+        if self._ssl:
+            pending_bytes = self._ssl.pending()
+
+        # if bytes are pending do not wait in select
+        if pending_bytes > 0:
+            timeout = 0.0
+
         # sockpairR is used to break out of select() before the timeout, on a
         # call to publish() etc.
         rlist = [self.socket(), self._sockpairR]
@@ -893,7 +922,7 @@ class Client(object):
         except:
             return MQTT_ERR_UNKNOWN
 
-        if self.socket() in socklist[0]:
+        if self.socket() in socklist[0] or pending_bytes > 0:
             rc = self.loop_read(max_packets)
             if rc or (self._ssl is None and self._sock is None):
                 return rc
@@ -981,7 +1010,10 @@ class Client(object):
             info.rc = rc
             return info
         else:
-            message = MQTTMessage(local_mid, topic)
+            if sys.version_info[0] >= 3:
+                message = MQTTMessage(local_mid, topic.encode('utf-8'))
+            else:
+                message = MQTTMessage(local_mid, topic)
             message.timestamp = time_func()
 
             if local_payload is None or len(local_payload) == 0:
@@ -1019,7 +1051,7 @@ class Client(object):
                 message.info.rc = rc
                 return message.info
             else:
-                message.state = mqtt_ms_queued;
+                message.state = mqtt_ms_queued
                 self._out_message_mutex.release()
                 message.info.rc = MQTT_ERR_SUCCESS
                 return message.info
@@ -1033,7 +1065,7 @@ class Client(object):
         username: The username to authenticate with. Need have no relationship to the client id.
         password: The password to authenticate with. Optional, set to None if not required.
         """
-        self._username = username.encode('utf-8')
+        self._username = username
         self._password = password
 
     def disconnect(self):
@@ -1364,7 +1396,7 @@ class Client(object):
             if self._state == mqtt_cs_connect_async:
                 try:
                     self.reconnect()
-                except socket.error:
+                except (socket.error, WebsocketConnectionError):
                     if not retry_first_connection:
                         raise
                     self._easy_log(MQTT_LOG_DEBUG, "Connection failed, retrying")
@@ -1405,7 +1437,7 @@ class Client(object):
                     self._state_mutex.release()
                     try:
                         self.reconnect()
-                    except socket.error as err:
+                    except (socket.error, WebsocketConnectionError) as err:
                         pass
 
         return rc
@@ -1727,6 +1759,8 @@ class Client(object):
                     print(err)
                     return 1
                 else:
+                    if len(byte) == 0:
+                        return 1
                     byte = struct.unpack("!B", byte)
                     byte = byte[0]
                     self._in_packet['remaining_count'].append(byte)
@@ -1758,6 +1792,8 @@ class Client(object):
                 print(err)
                 return 1
             else:
+                if len(data) == 0:
+                    return 1
                 self._in_packet['to_process'] = self._in_packet['to_process'] - len(data)
                 self._in_packet['packet'] = self._in_packet['packet'] + data
 
@@ -2051,6 +2087,7 @@ class Client(object):
         else:
             protocol = PROTOCOL_NAMEv311
             proto_ver = 4
+        protocol = protocol.encode('utf-8')
         remaining_length = 2+len(protocol) + 1+1+2 + 2+len(self._client_id)
         connect_flags = 0
         if clean_session:
@@ -2065,11 +2102,13 @@ class Client(object):
             connect_flags = connect_flags | 0x04 | ((self._will_qos&0x03) << 3) | ((self._will_retain&0x01) << 5)
 
         if self._username:
-            remaining_length = remaining_length + 2+len(self._username)
+            uusername = self._username.encode('utf-8')
+            remaining_length = remaining_length + 2+len(uusername)
             connect_flags = connect_flags | 0x80
             if self._password:
                 connect_flags = connect_flags | 0x40
-                remaining_length = remaining_length + 2+len(self._password)
+                upassword = self._password.encode('utf-8')
+                remaining_length = remaining_length + 2+len(upassword)
 
         command = CONNECT
         packet = bytearray()
@@ -2388,13 +2427,24 @@ class Client(object):
         pack_format = "!H" + str(len(self._in_packet['packet'])-2) + 's'
         (slen, packet) = struct.unpack(pack_format, self._in_packet['packet'])
         pack_format = '!' + str(slen) + 's' + str(len(packet)-slen) + 's'
-        (message.topic, packet) = struct.unpack(pack_format, packet)
+        (topic, packet) = struct.unpack(pack_format, packet)
 
-        if len(message.topic) == 0:
+        if len(topic) == 0:
             return MQTT_ERR_PROTOCOL
 
+        # Handle topics with invalid UTF-8
+        # This replaces an invalid topic with a message and the hex
+        # representation of the topic for logging. When the user attempts to
+        # access message.topic in the callback, an exception will be raised.
         if sys.version_info[0] >= 3:
-            message.topic = message.topic.decode('utf-8')
+            try:
+                print_topic = topic.decode('utf-8')
+            except UnicodeDecodeError:
+                print_topic = "TOPIC WITH INVALID UTF-8: " + str(topic)
+        else:
+            print_topic = topic
+
+        message.topic = topic
 
         if message.qos > 0:
             pack_format = "!H" + str(len(packet)-2) + 's'
@@ -2406,7 +2456,7 @@ class Client(object):
             MQTT_LOG_DEBUG,
             "Received PUBLISH (d"+str(message.dup)+
             ", q"+str(message.qos)+", r"+str(message.retain)+
-            ", m"+str(message.mid)+", '"+message.topic+
+            ", m"+str(message.mid)+", '"+print_topic+
             "', ...  ("+str(len(message.payload))+" bytes)")
 
         message.timestamp = time_func()
@@ -2584,9 +2634,9 @@ class Client(object):
             if cert_host.count("*") != 1:
                 return False
 
-            host_match = host.split(".", 1)[1]
-            cert_match = cert_host.split(".", 1)[1]
-            if host_match == cert_match:
+            host_match = host.split(".", 1)
+            cert_match = cert_host.split(".", 1)
+            if len(host_match) == 2 and len(cert_match) == 2 and host_match[1] == cert_match[1]:
                 return True
             else:
                 return False
@@ -2703,7 +2753,7 @@ class WebsocketWrapper:
                     # check upgrade
                     if b"connection" in str(self._readbuffer).lower().encode('utf-8'):
                         if b"upgrade" not in str(self._readbuffer).lower().encode('utf-8'):
-                            raise ValueError("WebSocket handshake error, connection not upgraded")
+                            raise WebsocketConnectionError("WebSocket handshake error, connection not upgraded")
                         else:
                             has_upgrade = True
 
@@ -2719,7 +2769,7 @@ class WebsocketWrapper:
                         client_hash = base64.b64encode(client_hash.digest())
 
                         if server_hash != client_hash:
-                            raise ValueError("WebSocket handshake error, invalid secret key")
+                            raise WebsocketConnectionError("WebSocket handshake error, invalid secret key")
                         else:
                             has_secret = True
                 else:
@@ -2731,10 +2781,10 @@ class WebsocketWrapper:
 
             # connection reset
             elif not byte:
-                raise ValueError("WebSocket handshake error")
+                raise WebsocketConnectionError("WebSocket handshake error")
 
         if not has_upgrade or not has_secret:
-            raise ValueError("WebSocket handshake error")
+            raise WebsocketConnectionError("WebSocket handshake error")
 
         self._readbuffer = bytearray()
         self.connected = True
@@ -2796,6 +2846,7 @@ class WebsocketWrapper:
             self._readbuffer_head = 0
 
             result = None
+            payload = bytearray()
 
             chunk_startindex = self._payload_head
             chunk_endindex = self._payload_head + length
@@ -2919,6 +2970,15 @@ class WebsocketWrapper:
 
     def fileno(self):
         return self._socket.fileno()
+
+    def pending(self):
+        # Fix for bug #131: a SSL socket may still have data available
+        # for reading without select() being aware of it.
+        if self._ssl:
+            return self._socket.pending()
+        else:
+            # normal socket rely only on select()
+            return 0
 
     def setblocking(self,flag):
         self._socket.setblocking(flag)

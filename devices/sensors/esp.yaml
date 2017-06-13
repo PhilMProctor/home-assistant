@@ -1,7 +1,7 @@
   - platform: template
     sensors:
       esp1:
-        value_template: '{% if is_state("device_tracker.18fe349d1059", "home") %}Online{% else %}Offline{% endif %}'
+        value_template: '{% if is_state("device_tracker.18fe34dab9b8", "home") %}Online{% else %}Offline{% endif %}'
         friendly_name: 'Hallway'
       esp2:
         value_template: '{% if is_state("device_tracker.18fe34da56a9", "home") %}Online{% else %}Offline{% endif %}'

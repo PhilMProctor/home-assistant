@@ -1,5 +1,5 @@
 # sql/sqltypes.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -15,7 +15,7 @@ import collections
 import json
 
 from . import elements
-from .type_api import TypeEngine, TypeDecorator, to_instance
+from .type_api import TypeEngine, TypeDecorator, to_instance, Variant
 from .elements import quoted_name, TypeCoerce as type_coerce, _defer_name, \
     Slice, _literal_as_binds
 from .. import exc, util, processors
@@ -660,7 +660,7 @@ class Float(Numeric):
 
     def __init__(self, precision=None, asdecimal=False,
                  decimal_return_scale=None, **kwargs):
-        """
+        r"""
         Construct a Float.
 
         :param precision: the numeric precision for use in DDL ``CREATE
@@ -997,8 +997,19 @@ class SchemaType(SchemaEventTarget):
                 util.portable_instancemethod(self._on_metadata_drop)
             )
 
+    def _translate_schema(self, effective_schema, map_):
+        return map_.get(effective_schema, effective_schema)
+
     def _set_parent(self, column):
         column._on_table_attach(util.portable_instancemethod(self._set_table))
+
+    def _variant_mapping_for_set_table(self, column):
+        if isinstance(column.type, Variant):
+            variant_mapping = column.type.mapping.copy()
+            variant_mapping['_default'] = column.type.impl
+        else:
+            variant_mapping = None
+        return variant_mapping
 
     def _set_table(self, column, table):
         if self.inherit_schema:
@@ -1007,16 +1018,21 @@ class SchemaType(SchemaEventTarget):
         if not self._create_events:
             return
 
+        variant_mapping = self._variant_mapping_for_set_table(column)
+
         event.listen(
             table,
             "before_create",
             util.portable_instancemethod(
-                self._on_table_create)
+                self._on_table_create,
+                {"variant_mapping": variant_mapping})
         )
         event.listen(
             table,
             "after_drop",
-            util.portable_instancemethod(self._on_table_drop)
+            util.portable_instancemethod(
+                self._on_table_drop,
+                {"variant_mapping": variant_mapping})
         )
         if self.metadata is None:
             # TODO: what's the difference between self.metadata
@@ -1024,12 +1040,16 @@ class SchemaType(SchemaEventTarget):
             event.listen(
                 table.metadata,
                 "before_create",
-                util.portable_instancemethod(self._on_metadata_create)
+                util.portable_instancemethod(
+                    self._on_metadata_create,
+                    {"variant_mapping": variant_mapping})
             )
             event.listen(
                 table.metadata,
                 "after_drop",
-                util.portable_instancemethod(self._on_metadata_drop)
+                util.portable_instancemethod(
+                    self._on_metadata_drop,
+                    {"variant_mapping": variant_mapping})
             )
 
     def copy(self, **kw):
@@ -1070,24 +1090,47 @@ class SchemaType(SchemaEventTarget):
             t.drop(bind=bind, checkfirst=checkfirst)
 
     def _on_table_create(self, target, bind, **kw):
+        if not self._is_impl_for_variant(bind.dialect, kw):
+            return
+
         t = self.dialect_impl(bind.dialect)
         if t.__class__ is not self.__class__ and isinstance(t, SchemaType):
             t._on_table_create(target, bind, **kw)
 
     def _on_table_drop(self, target, bind, **kw):
+        if not self._is_impl_for_variant(bind.dialect, kw):
+            return
+
         t = self.dialect_impl(bind.dialect)
         if t.__class__ is not self.__class__ and isinstance(t, SchemaType):
             t._on_table_drop(target, bind, **kw)
 
     def _on_metadata_create(self, target, bind, **kw):
+        if not self._is_impl_for_variant(bind.dialect, kw):
+            return
+
         t = self.dialect_impl(bind.dialect)
         if t.__class__ is not self.__class__ and isinstance(t, SchemaType):
             t._on_metadata_create(target, bind, **kw)
 
     def _on_metadata_drop(self, target, bind, **kw):
+        if not self._is_impl_for_variant(bind.dialect, kw):
+            return
+
         t = self.dialect_impl(bind.dialect)
         if t.__class__ is not self.__class__ and isinstance(t, SchemaType):
             t._on_metadata_drop(target, bind, **kw)
+
+    def _is_impl_for_variant(self, dialect, kw):
+        variant_mapping = kw.pop('variant_mapping', None)
+        if variant_mapping is None:
+            return True
+
+        if dialect.name in variant_mapping and \
+                variant_mapping[dialect.name] is self:
+            return True
+        elif dialect.name not in variant_mapping:
+            return variant_mapping['_default'] is self
 
 
 class Enum(String, SchemaType):
@@ -1104,10 +1147,17 @@ class Enum(String, SchemaType):
     the production of the CHECK constraint is configurable using the
     :paramref:`.Enum.create_constraint` flag.
 
-    The :class:`.Enum` type also provides in-Python validation of both
-    input values and database-returned values.   A ``LookupError`` is raised
-    for any Python value that's not located in the given list of possible
-    values.
+    The :class:`.Enum` type also provides in-Python validation of string
+    values during both read and write operations.  When reading a value
+    from the database in a result set, the string value is always checked
+    against the list of possible values and a ``LookupError`` is raised
+    if no match is found.  When passing a value to the database as a
+    plain string within a SQL statement, if the
+    :paramref:`.Enum.validate_strings` parameter is
+    set to True, a ``LookupError`` is raised for any string value that's
+    not located in the given list of possible values; note that this
+    impacts usage of LIKE expressions with enumerated values (an unusual
+    use case).
 
     .. versionchanged:: 1.1 the :class:`.Enum` type now provides in-Python
        validation of input values as well as on data being returned by
@@ -1124,9 +1174,9 @@ class Enum(String, SchemaType):
 
         import enum
         class MyEnum(enum.Enum):
-            one = "one"
-            two = "two"
-            three = "three"
+            one = 1
+            two = 2
+            three = 3
 
 
         t = Table(
@@ -1136,6 +1186,11 @@ class Enum(String, SchemaType):
 
         connection.execute(t.insert(), {"value": MyEnum.two})
         assert connection.scalar(t.select()) is MyEnum.two
+
+    Above, the string names of each element, e.g. "one", "two", "three",
+    are persisted to the database; the values of the Python Enum, here
+    indicated as integers, are **not** used; the value of each enum can
+    therefore be any kind of Python object whether or not it is persistable.
 
     .. versionadded:: 1.1 - support for PEP-435-style enumerated
        classes.
@@ -1151,7 +1206,7 @@ class Enum(String, SchemaType):
     __visit_name__ = 'enum'
 
     def __init__(self, *enums, **kw):
-        """Construct an enum.
+        r"""Construct an enum.
 
         Keyword arguments which don't apply to a specific backend are ignored
         by that backend.
@@ -1217,8 +1272,10 @@ class Enum(String, SchemaType):
            ``schema`` attribute.   This also takes effect when using the
            :meth:`.Table.tometadata` operation.
 
-        :param validate_strings: when True, invalid string values will
-           be validated and not be allowed to pass through.
+        :param validate_strings: when True, string values that are being
+           passed to the database in a SQL statement will be checked
+           for validity against the list of enumerated values.  Unrecognized
+           values will result in a ``LookupError`` being raised.
 
            .. versionadded:: 1.1.0b2
 
@@ -1322,7 +1379,9 @@ class Enum(String, SchemaType):
                                  to_inspect=[Enum, SchemaType],
                                  )
 
-    def _should_create_constraint(self, compiler):
+    def _should_create_constraint(self, compiler, **kw):
+        if not self._is_impl_for_variant(compiler.dialect, kw):
+            return False
         return not self.native_enum or \
             not compiler.dialect.supports_native_enum
 
@@ -1334,11 +1393,14 @@ class Enum(String, SchemaType):
         if not self.create_constraint:
             return
 
+        variant_mapping = self._variant_mapping_for_set_table(column)
+
         e = schema.CheckConstraint(
             type_coerce(column, self).in_(self.enums),
             name=_defer_name(self.name),
             _create_rule=util.portable_instancemethod(
-                self._should_create_constraint),
+                self._should_create_constraint,
+                {"variant_mapping": variant_mapping}),
             _type_bound=True
         )
         assert e.table is table
@@ -1517,7 +1579,9 @@ class Boolean(TypeEngine, SchemaType):
         self.name = name
         self._create_events = _create_events
 
-    def _should_create_constraint(self, compiler):
+    def _should_create_constraint(self, compiler, **kw):
+        if not self._is_impl_for_variant(compiler.dialect, kw):
+            return False
         return not compiler.dialect.supports_native_boolean
 
     @util.dependencies("sqlalchemy.sql.schema")
@@ -1525,11 +1589,14 @@ class Boolean(TypeEngine, SchemaType):
         if not self.create_constraint:
             return
 
+        variant_mapping = self._variant_mapping_for_set_table(column)
+
         e = schema.CheckConstraint(
             type_coerce(column, self).in_([0, 1]),
             name=_defer_name(self.name),
             _create_rule=util.portable_instancemethod(
-                self._should_create_constraint),
+                self._should_create_constraint,
+                {"variant_mapping": variant_mapping}),
             _type_bound=True
         )
         assert e.table is table
@@ -1728,7 +1795,55 @@ class JSON(Indexable, TypeEngine):
 
     Index operations return an expression object whose type defaults to
     :class:`.JSON` by default, so that further JSON-oriented instructions
-    may be called upon the result type.
+    may be called upon the result type.   Note that there are backend-specific
+    idiosyncracies here, including that the Postgresql database does not generally
+    compare a "json" to a "json" structure without type casts.  These idiosyncracies
+    can be accommodated in a backend-neutral way by by making explicit use
+    of the :func:`.cast` and :func:`.type_coerce` constructs.
+    Comparison of specific index elements of a :class:`.JSON` object
+    to other objects work best if the **left hand side is CAST to a string**
+    and the **right hand side is rendered as a json string**; a future SQLAlchemy
+    feature such as a generic "astext" modifier may simplify this at some point:
+
+    * **Compare an element of a JSON structure to a string**::
+
+        from sqlalchemy import cast, type_coerce
+        from sqlalchemy import String, JSON
+
+        cast(
+            data_table.c.data['some_key'], String
+        ) == '"some_value"'
+
+        cast(
+            data_table.c.data['some_key'], String
+        ) == type_coerce("some_value", JSON)
+
+    * **Compare an element of a JSON structure to an integer**::
+
+        from sqlalchemy import cast, type_coerce
+        from sqlalchemy import String, JSON
+
+        cast(data_table.c.data['some_key'], String) == '55'
+
+        cast(
+            data_table.c.data['some_key'], String
+        ) == type_coerce(55, JSON)
+
+    * **Compare an element of a JSON structure to some other JSON structure** - note
+      that Python dictionaries are typically not ordered so care should be taken
+      here to assert that the JSON structures are identical::
+
+        from sqlalchemy import cast, type_coerce
+        from sqlalchemy import String, JSON
+        import json
+
+        cast(
+            data_table.c.data['some_key'], String
+        ) == json.dumps({"foo": "bar"})
+
+        cast(
+            data_table.c.data['some_key'], String
+        ) == type_coerce({"foo": "bar"}, JSON)
 
     The :class:`.JSON` type, when used with the SQLAlchemy ORM, does not
     detect in-place mutations to the structure.  In order to detect these, the
@@ -1795,6 +1910,22 @@ class JSON(Indexable, TypeEngine):
 
         session.add_all([obj1, obj2])
         session.commit()
+
+    In order to set JSON NULL as a default value for a column, the most
+    transparent method is to use :func:`.text`::
+
+        Table(
+            'my_table', metadata,
+            Column('json_data', JSON, default=text("'null'"))
+        )
+
+    While it is possible to use :attr:`.JSON.NULL` in this context, the
+    :attr:`.JSON.NULL` value will be returned as the value of the column,
+    which in the context of the ORM or other repurposing of the default
+    value, may not be desirable.  Using a SQL expression means the value
+    will be re-fetched from the database within the context of retrieving
+    generated defaults.
+
 
     """
 

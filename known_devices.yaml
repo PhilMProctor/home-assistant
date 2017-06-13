@@ -278,3 +278,91 @@ f4f1e1d25cab:
   picture:
   track: true
   vendor: Liteon Technology Corporation
+
+18fe34a5ffe9:
+  hide_if_away: false
+  mac: 18:FE:34:A5:FF:E9
+  name: 18fe34a5ffe9
+  picture:
+  track: true
+  vendor: Espressif Inc.
+
+148f210a459e:
+  hide_if_away: false
+  mac: 14:8F:21:0A:45:9E
+  name: 148f210a459e
+  picture:
+  track: true
+  vendor: Garmin International
+
+000f55bc22b2:
+  hide_if_away: false
+  mac: 00:0F:55:BC:22:B2
+  name: 000f55bc22b2
+  picture:
+  track: true
+  vendor: Datawire Communication Networks Inc.
+
+d4bed967033c:
+  hide_if_away: false
+  mac: D4:BE:D9:67:03:3C
+  name: d4bed967033c
+  picture:
+  track: true
+  vendor: unknown
+
+b827eb407aa5:
+  hide_if_away: false
+  mac: B8:27:EB:40:7A:A5
+  name: b827eb407aa5
+  picture:
+  track: true
+  vendor: Raspberry Pi Foundation
+
+4439c40baf41:
+  hide_if_away: false
+  mac: 44:39:C4:0B:AF:41
+  name: 4439c40baf41
+  picture:
+  track: true
+  vendor: unknown
+
+ccc3eabac01c:
+  hide_if_away: false
+  mac: CC:C3:EA:BA:C0:1C
+  name: ccc3eabac01c
+  picture:
+  track: true
+  vendor: Motorola Mobility LLC, a Lenovo Company
+
+1cb094d08781:
+  hide_if_away: false
+  mac: 1C:B0:94:D0:87:81
+  name: 1cb094d08781
+  picture:
+  track: true
+  vendor: HTC Corporation
+
+38b1dbb51c4d:
+  hide_if_away: false
+  mac: 38:B1:DB:B5:1C:4D
+  name: 38b1dbb51c4d
+  picture:
+  track: true
+  vendor: Hon Hai Precision Ind. Co.,Ltd.
+
+18fe34dab9b8:
+  hide_if_away: false
+  mac: 18:FE:34:DA:B9:B8
+  name: ESP-b98
+  picture:
+  track: true
+  vendor: Espressif Inc.
+
+f0d7aa301053:
+  hide_if_away: false
+  mac: F0:D7:AA:30:10:53
+  name: f0d7aa301053
+  picture:
+  track: true
+  vendor: Motorola Mobility LLC, a Lenovo Company

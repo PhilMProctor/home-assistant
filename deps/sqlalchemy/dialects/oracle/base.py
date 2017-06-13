@@ -1,5 +1,5 @@
 # oracle/base.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -74,7 +74,7 @@ LIMIT/OFFSET Support
 Oracle has no support for the LIMIT or OFFSET keywords.  SQLAlchemy uses
 a wrapped subquery approach in conjunction with ROWNUM.  The exact methodology
 is taken from
-http://www.oracle.com/technology/oramag/oracle/06-sep/o56asktom.html .
+http://www.oracle.com/technetwork/issue-archive/2006/06-sep/o56asktom-086197.html .
 
 There are two options which affect its behavior:
 
@@ -1026,7 +1026,7 @@ class OracleDialect(default.DefaultDialect):
     @property
     def _supports_table_compression(self):
         return self.server_version_info and \
-            self.server_version_info >= (9, 2, )
+            self.server_version_info >= (10, 1, )
 
     @property
     def _supports_table_compress_for(self):

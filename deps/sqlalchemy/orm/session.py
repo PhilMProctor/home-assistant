@@ -1,5 +1,5 @@
 # orm/session.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -592,7 +592,7 @@ class Session(_SessionClassMethods):
                  weak_identity_map=True, binds=None, extension=None,
                  info=None,
                  query_cls=query.Query):
-        """Construct a new Session.
+        r"""Construct a new Session.
 
         See also the :class:`.sessionmaker` function which is used to
         generate a :class:`.Session`-producing callable with a given
@@ -778,18 +778,37 @@ class Session(_SessionClassMethods):
     def begin(self, subtransactions=False, nested=False):
         """Begin a transaction on this :class:`.Session`.
 
-        If this Session is already within a transaction, either a plain
-        transaction or nested transaction, an error is raised, unless
-        ``subtransactions=True`` or ``nested=True`` is specified.
+        The :meth:`.Session.begin` method is only
+        meaningful if this session is in **autocommit mode** prior to
+        it being called; see :ref:`session_autocommit` for background
+        on this setting.
 
-        The ``subtransactions=True`` flag indicates that this
-        :meth:`~.Session.begin` can create a subtransaction if a transaction
-        is already in progress. For documentation on subtransactions, please
-        see :ref:`session_subtransactions`.
+        The method will raise an error if this :class:`.Session`
+        is already inside of a transaction, unless
+        :paramref:`.Session.begin.subtransactions` or
+        :paramref:`.Session.begin.nested` are specified.
 
-        The ``nested`` flag begins a SAVEPOINT transaction and is equivalent
-        to calling :meth:`~.Session.begin_nested`. For documentation on
-        SAVEPOINT transactions, please see :ref:`session_begin_nested`.
+        :param subtransactions: if True, indicates that this
+         :meth:`~.Session.begin` can create a subtransaction if a transaction
+         is already in progress. For documentation on subtransactions, please
+         see :ref:`session_subtransactions`.
+
+        :param nested: if True, begins a SAVEPOINT transaction and is equivalent
+         to calling :meth:`~.Session.begin_nested`. For documentation on
+         SAVEPOINT transactions, please see :ref:`session_begin_nested`.
+
+        :return: the :class:`.SessionTransaction` object.  Note that
+         :class:`.SessionTransaction`
+         acts as a Python context manager, allowing :meth:`.Session.begin`
+         to be used in a "with" block.  See :ref:`session_autocommit` for
+         an example.
+
+        .. seealso::
+
+            :ref:`session_autocommit`
+
+            :meth:`.Session.begin_nested`
+
 
         """
         if self.transaction is not None:
@@ -806,13 +825,26 @@ class Session(_SessionClassMethods):
         return self.transaction  # needed for __enter__/__exit__ hook
 
     def begin_nested(self):
-        """Begin a `nested` transaction on this Session.
+        """Begin a "nested" transaction on this Session, e.g. SAVEPOINT.
 
-        The target database(s) must support SQL SAVEPOINTs or a
-        SQLAlchemy-supported vendor implementation of the idea.
+        The target database(s) and associated drivers must support SQL
+        SAVEPOINT for this method to function correctly.
 
         For documentation on SAVEPOINT
         transactions, please see :ref:`session_begin_nested`.
+
+        :return: the :class:`.SessionTransaction` object.  Note that
+         :class:`.SessionTransaction` acts as a context manager, allowing
+         :meth:`.Session.begin_nested` to be used in a "with" block.
+         See :ref:`session_begin_nested` for a usage example.
+
+        .. seealso::
+
+            :ref:`session_begin_nested`
+
+            :ref:`pysqlite_serializable` - special workarounds required
+            with the SQLite driver in order for SAVEPOINT to work
+            correctly.
 
         """
         return self.begin(nested=True)
@@ -897,7 +929,7 @@ class Session(_SessionClassMethods):
                    close_with_result=False,
                    execution_options=None,
                    **kw):
-        """Return a :class:`.Connection` object corresponding to this
+        r"""Return a :class:`.Connection` object corresponding to this
         :class:`.Session` object's transactional state.
 
         If this :class:`.Session` is configured with ``autocommit=False``,
@@ -976,7 +1008,7 @@ class Session(_SessionClassMethods):
             return conn
 
     def execute(self, clause, params=None, mapper=None, bind=None, **kw):
-        """Execute a SQL expression construct or string statement within
+        r"""Execute a SQL expression construct or string statement within
         the current transaction.
 
         Returns a :class:`.ResultProxy` representing
@@ -1354,8 +1386,10 @@ class Session(_SessionClassMethods):
         """
         autoflush = self.autoflush
         self.autoflush = False
-        yield self
-        self.autoflush = autoflush
+        try:
+            yield self
+        finally:
+            self.autoflush = autoflush
 
     def _autoflush(self):
         if self.autoflush and not self._flushing:
@@ -1592,7 +1626,7 @@ class Session(_SessionClassMethods):
                         "that the mapped Column object is configured to "
                         "expect these generated values.  Ensure also that "
                         "this flush() is not occurring at an inappropriate "
-                        "time, such aswithin a load() event."
+                        "time, such as within a load() event."
                         % state_str(state)
                     )
 
@@ -2505,7 +2539,7 @@ class Session(_SessionClassMethods):
 
     def is_modified(self, instance, include_collections=True,
                     passive=True):
-        """Return ``True`` if the given instance has locally
+        r"""Return ``True`` if the given instance has locally
         modified attributes.
 
         This method retrieves the history for each instrumented
@@ -2563,6 +2597,7 @@ class Session(_SessionClassMethods):
          or many-to-one foreign keys) that would result in an UPDATE for this
          instance upon flush.
         :param passive:
+
          .. versionchanged:: 0.8
              Ignored for backwards compatibility.
              When using SQLAlchemy 0.7 and earlier, this flag should always
@@ -2767,7 +2802,7 @@ class sessionmaker(_SessionClassMethods):
                  autocommit=False,
                  expire_on_commit=True,
                  info=None, **kw):
-        """Construct a new :class:`.sessionmaker`.
+        r"""Construct a new :class:`.sessionmaker`.
 
         All arguments here except for ``class_`` correspond to arguments
         accepted by :class:`.Session` directly.  See the

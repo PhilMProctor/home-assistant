@@ -3,6 +3,7 @@
 import asyncio
 import base64
 import hashlib
+import json
 import os
 import sys
 import traceback
@@ -11,20 +12,31 @@ import warnings
 from multidict import CIMultiDict, MultiDict, MultiDictProxy, istr
 from yarl import URL
 
-import aiohttp
-
-from . import hdrs, helpers
-from ._ws_impl import WS_KEY, WebSocketParser, WebSocketWriter
+from . import connector as connector_mod
+from . import client_exceptions, client_reqrep, hdrs, http, payload
+from .client_exceptions import *  # noqa
+from .client_exceptions import (ClientError, ClientOSError, ServerTimeoutError,
+                                WSServerHandshakeError)
+from .client_reqrep import *  # noqa
 from .client_reqrep import ClientRequest, ClientResponse
 from .client_ws import ClientWebSocketResponse
+from .connector import *  # noqa
+from .connector import TCPConnector
 from .cookiejar import CookieJar
-from .errors import WSServerHandshakeError
-from .helpers import Timeout
+from .helpers import (PY_35, CeilTimeout, TimeoutHandle, deprecated_noop,
+                      sentinel)
+from .http import WS_KEY, WebSocketReader, WebSocketWriter
+from .streams import FlowControlDataQueue
 
-__all__ = ('ClientSession', 'request', 'get', 'options', 'head',
-           'delete', 'post', 'put', 'patch', 'ws_connect')
 
-PY_35 = sys.version_info >= (3, 5)
+__all__ = (client_exceptions.__all__ +  # noqa
+           client_reqrep.__all__ +  # noqa
+           connector_mod.__all__ +  # noqa
+           ('ClientSession', 'ClientWebSocketResponse', 'request'))
+
+
+# 5 Minute default read and connect timeout
+DEFAULT_TIMEOUT = 5 * 60
 
 
 class ClientSession:
@@ -33,28 +45,38 @@ class ClientSession:
     _source_traceback = None
     _connector = None
 
+    requote_redirect_url = True
+
     def __init__(self, *, connector=None, loop=None, cookies=None,
                  headers=None, skip_auto_headers=None,
-                 auth=None, request_class=ClientRequest,
-                 response_class=ClientResponse,
+                 auth=None, json_serialize=json.dumps,
+                 request_class=ClientRequest, response_class=ClientResponse,
                  ws_response_class=ClientWebSocketResponse,
-                 version=aiohttp.HttpVersion11,
-                 cookie_jar=None):
+                 version=http.HttpVersion11,
+                 cookie_jar=None, connector_owner=True, raise_for_status=False,
+                 read_timeout=sentinel, conn_timeout=None):
+
+        implicit_loop = False
+        if loop is None:
+            if connector is not None:
+                loop = connector._loop
+            else:
+                implicit_loop = True
+                loop = asyncio.get_event_loop()
 
         if connector is None:
-            connector = aiohttp.TCPConnector(loop=loop)
-            loop = connector._loop  # never None
-        else:
-            if loop is None:
-                loop = connector._loop  # never None
-            elif connector._loop is not loop:
-                raise ValueError("loop argument must agree with connector")
+            connector = TCPConnector(loop=loop)
+
+        if connector._loop is not loop:
+            raise RuntimeError(
+                "Session and connector has to use same event loop")
 
         self._loop = loop
+
         if loop.get_debug():
             self._source_traceback = traceback.extract_stack(sys._getframe(1))
 
-        if not loop.is_running():
+        if implicit_loop and not loop.is_running():
             warnings.warn("Creating a client session outside of coroutine is "
                           "a very dangerous idea", ResourceWarning,
                           stacklevel=2)
@@ -72,8 +94,14 @@ class ClientSession:
         if cookies is not None:
             self._cookie_jar.update_cookies(cookies)
         self._connector = connector
+        self._connector_owner = connector_owner
         self._default_auth = auth
         self._version = version
+        self._json_serialize = json_serialize
+        self._read_timeout = (read_timeout if read_timeout is not sentinel
+                              else DEFAULT_TIMEOUT)
+        self._conn_timeout = conn_timeout
+        self._raise_for_status = raise_for_status
 
         # Convert to list of tuples
         if headers:
@@ -111,32 +139,47 @@ class ClientSession:
     def _request(self, method, url, *,
                  params=None,
                  data=None,
+                 json=None,
                  headers=None,
                  skip_auto_headers=None,
                  auth=None,
                  allow_redirects=True,
                  max_redirects=10,
-                 encoding='utf-8',
-                 version=None,
+                 encoding=None,
                  compress=None,
                  chunked=None,
                  expect100=False,
                  read_until_eof=True,
                  proxy=None,
                  proxy_auth=None,
-                 timeout=5*60):
+                 timeout=sentinel):
 
-        if version is not None:
-            warnings.warn("HTTP version should be specified "
-                          "by ClientSession constructor", DeprecationWarning)
-        else:
-            version = self._version
+        # NOTE: timeout clamps existing connect and read timeouts.  We cannot
+        # set the default to None because we need to detect if the user wants
+        # to use the existing timeouts by setting timeout to None.
+
+        if encoding is not None:
+            warnings.warn(
+                "encoding parameter is not supported, "
+                "please use FormData(charset='utf-8') instead",
+                DeprecationWarning)
 
         if self.closed:
             raise RuntimeError('Session is closed')
 
+        if data is not None and json is not None:
+            raise ValueError(
+                'data and json parameters can not be used at the same time')
+        elif json is not None:
+            data = payload.JsonPayload(json, dumps=self._json_serialize)
+
+        if not isinstance(chunked, bool) and chunked is not None:
+            warnings.warn(
+                'Chunk size is deprecated #1615', DeprecationWarning)
+
         redirects = 0
         history = []
+        version = self._version
 
         # Merge with default headers and transform to CIMultiDict
         headers = self._prepare_headers(headers)
@@ -158,95 +201,131 @@ class ClientSession:
         if proxy is not None:
             proxy = URL(proxy)
 
-        while True:
-            url = URL(url).with_fragment(None)
+        # timeout is cumulative for all request operations
+        # (request, redirects, responses, data consuming)
+        tm = TimeoutHandle(
+            self._loop,
+            timeout if timeout is not sentinel else self._read_timeout)
+        handle = tm.start()
 
-            cookies = self._cookie_jar.filter_cookies(url)
+        timer = tm.timer()
+        try:
+            with timer:
+                while True:
+                    url = URL(url).with_fragment(None)
+                    cookies = self._cookie_jar.filter_cookies(url)
 
-            req = self._request_class(
-                method, url, params=params, headers=headers,
-                skip_auto_headers=skip_headers, data=data,
-                cookies=cookies, encoding=encoding,
-                auth=auth, version=version, compress=compress, chunked=chunked,
-                expect100=expect100,
-                loop=self._loop, response_class=self._response_class,
-                proxy=proxy, proxy_auth=proxy_auth, timeout=timeout)
+                    req = self._request_class(
+                        method, url, params=params, headers=headers,
+                        skip_auto_headers=skip_headers, data=data,
+                        cookies=cookies, auth=auth, version=version,
+                        compress=compress, chunked=chunked,
+                        expect100=expect100, loop=self._loop,
+                        response_class=self._response_class,
+                        proxy=proxy, proxy_auth=proxy_auth, timer=timer)
 
-            with Timeout(timeout, loop=self._loop):
-                conn = yield from self._connector.connect(req)
-            conn.writer.set_tcp_nodelay(True)
-            try:
-                resp = req.send(conn.writer, conn.reader)
-                try:
-                    yield from resp.start(conn, read_until_eof)
-                except:
-                    resp.close()
-                    conn.close()
-                    raise
-            except (aiohttp.HttpProcessingError,
-                    aiohttp.ServerDisconnectedError) as exc:
-                raise aiohttp.ClientResponseError() from exc
-            except OSError as exc:
-                raise aiohttp.ClientOSError(*exc.args) from exc
+                    # connection timeout
+                    try:
+                        with CeilTimeout(self._conn_timeout, loop=self._loop):
+                            conn = yield from self._connector.connect(req)
+                    except asyncio.TimeoutError as exc:
+                        raise ServerTimeoutError(
+                            'Connection timeout '
+                            'to host {0}'.format(url)) from exc
 
-            self._cookie_jar.update_cookies(resp.cookies, resp.url_obj)
+                    conn.writer.set_tcp_nodelay(True)
+                    try:
+                        resp = req.send(conn)
+                        try:
+                            yield from resp.start(conn, read_until_eof)
+                        except:
+                            resp.close()
+                            conn.close()
+                            raise
+                    except ClientError:
+                        raise
+                    except OSError as exc:
+                        raise ClientOSError(*exc.args) from exc
 
-            # redirects
-            if resp.status in (301, 302, 303, 307) and allow_redirects:
-                redirects += 1
-                history.append(resp)
-                if max_redirects and redirects >= max_redirects:
-                    resp.close()
+                    self._cookie_jar.update_cookies(resp.cookies, resp.url)
+
+                    # redirects
+                    if resp.status in (301, 302, 303, 307) and allow_redirects:
+                        redirects += 1
+                        history.append(resp)
+                        if max_redirects and redirects >= max_redirects:
+                            resp.close()
+                            break
+                        else:
+                            resp.release()
+
+                        # For 301 and 302, mimic IE, now changed in RFC
+                        # https://github.com/kennethreitz/requests/pull/269
+                        if (resp.status == 303 and
+                                resp.method != hdrs.METH_HEAD) \
+                                or (resp.status in (301, 302) and
+                                    resp.method == hdrs.METH_POST):
+                            method = hdrs.METH_GET
+                            data = None
+                            if headers.get(hdrs.CONTENT_LENGTH):
+                                headers.pop(hdrs.CONTENT_LENGTH)
+
+                        r_url = (resp.headers.get(hdrs.LOCATION) or
+                                 resp.headers.get(hdrs.URI))
+                        if r_url is None:
+                            raise RuntimeError(
+                                "{0.method} {0.url} returns "
+                                "a redirect [{0.status}] status "
+                                "but response lacks a Location "
+                                "or URI HTTP header".format(resp))
+                        r_url = URL(
+                            r_url, encoded=not self.requote_redirect_url)
+
+                        scheme = r_url.scheme
+                        if scheme not in ('http', 'https', ''):
+                            resp.close()
+                            raise ValueError(
+                                'Can redirect only to http or https')
+                        elif not scheme:
+                            r_url = url.join(r_url)
+
+                        url = r_url
+                        params = None
+                        resp.release()
+                        continue
+
                     break
+
+            # check response status
+            if self._raise_for_status:
+                resp.raise_for_status()
+
+            # register connection
+            if handle is not None:
+                if resp.connection is not None:
+                    resp.connection.add_callback(handle.cancel)
                 else:
-                    # TODO: close the connection if BODY is large enough
-                    # Redirect with big BODY is forbidden by HTTP protocol
-                    # but malformed server may send illegal response.
-                    # Small BODIES with text like "Not Found" are still
-                    # perfectly fine and should be accepted.
-                    yield from resp.release()
+                    handle.cancel()
 
-                # For 301 and 302, mimic IE behaviour, now changed in RFC.
-                # Details: https://github.com/kennethreitz/requests/pull/269
-                if (resp.status == 303 and resp.method != hdrs.METH_HEAD) \
-                   or (resp.status in (301, 302) and
-                       resp.method == hdrs.METH_POST):
-                    method = hdrs.METH_GET
-                    data = None
-                    if headers.get(hdrs.CONTENT_LENGTH):
-                        headers.pop(hdrs.CONTENT_LENGTH)
+            resp._history = tuple(history)
+            return resp
 
-                r_url = (resp.headers.get(hdrs.LOCATION) or
-                         resp.headers.get(hdrs.URI))
-                if r_url is None:
-                    raise RuntimeError("{0.method} {0.url_obj} returns "
-                                       "a redirect [{0.status}] status "
-                                       "but response lacks a Location "
-                                       "or URI HTTP header".format(resp))
-                r_url = URL(r_url)
+        except:
+            # cleanup timer
+            tm.close()
+            if handle:
+                handle.cancel()
+                handle = None
 
-                scheme = r_url.scheme
-                if scheme not in ('http', 'https', ''):
-                    resp.close()
-                    raise ValueError('Can redirect only to http or https')
-                elif not scheme:
-                    r_url = url.join(r_url)
-
-                url = r_url
-                params = None
-                yield from resp.release()
-                continue
-
-            break
-
-        resp._history = tuple(history)
-        return resp
+            raise
 
     def ws_connect(self, url, *,
                    protocols=(),
                    timeout=10.0,
+                   receive_timeout=None,
                    autoclose=True,
                    autoping=True,
+                   heartbeat=None,
                    auth=None,
                    origin=None,
                    headers=None,
@@ -257,8 +336,10 @@ class ClientSession:
             self._ws_connect(url,
                              protocols=protocols,
                              timeout=timeout,
+                             receive_timeout=receive_timeout,
                              autoclose=autoclose,
                              autoping=autoping,
+                             heartbeat=heartbeat,
                              auth=auth,
                              origin=origin,
                              headers=headers,
@@ -269,15 +350,15 @@ class ClientSession:
     def _ws_connect(self, url, *,
                     protocols=(),
                     timeout=10.0,
+                    receive_timeout=None,
                     autoclose=True,
                     autoping=True,
+                    heartbeat=None,
                     auth=None,
                     origin=None,
                     headers=None,
                     proxy=None,
                     proxy_auth=None):
-
-        sec_key = base64.b64encode(os.urandom(16))
 
         if headers is None:
             headers = CIMultiDict()
@@ -286,12 +367,14 @@ class ClientSession:
             hdrs.UPGRADE: hdrs.WEBSOCKET,
             hdrs.CONNECTION: hdrs.UPGRADE,
             hdrs.SEC_WEBSOCKET_VERSION: '13',
-            hdrs.SEC_WEBSOCKET_KEY: sec_key.decode(),
         }
 
         for key, value in default_headers.items():
             if key not in headers:
                 headers[key] = value
+
+        sec_key = base64.b64encode(os.urandom(16))
+        headers[hdrs.SEC_WEBSOCKET_KEY] = sec_key.decode()
 
         if protocols:
             headers[hdrs.SEC_WEBSOCKET_PROTOCOL] = ','.join(protocols)
@@ -309,18 +392,24 @@ class ClientSession:
             # check handshake
             if resp.status != 101:
                 raise WSServerHandshakeError(
+                    resp.request_info,
+                    resp.history,
                     message='Invalid response status',
                     code=resp.status,
                     headers=resp.headers)
 
             if resp.headers.get(hdrs.UPGRADE, '').lower() != 'websocket':
                 raise WSServerHandshakeError(
+                    resp.request_info,
+                    resp.history,
                     message='Invalid upgrade header',
                     code=resp.status,
                     headers=resp.headers)
 
             if resp.headers.get(hdrs.CONNECTION, '').lower() != 'upgrade':
                 raise WSServerHandshakeError(
+                    resp.request_info,
+                    resp.history,
                     message='Invalid connection header',
                     code=resp.status,
                     headers=resp.headers)
@@ -331,6 +420,8 @@ class ClientSession:
                 hashlib.sha1(sec_key + WS_KEY).digest()).decode()
             if key != match:
                 raise WSServerHandshakeError(
+                    resp.request_info,
+                    resp.history,
                     message='Invalid challenge response',
                     code=resp.status,
                     headers=resp.headers)
@@ -347,7 +438,10 @@ class ClientSession:
                         protocol = proto
                         break
 
-            reader = resp.connection.reader.set_parser(WebSocketParser)
+            proto = resp.connection.protocol
+            reader = FlowControlDataQueue(
+                proto, limit=2 ** 16, loop=self._loop)
+            proto.set_parser(WebSocketReader(reader), reader)
             resp.connection.writer.set_tcp_nodelay(True)
             writer = WebSocketWriter(resp.connection.writer, use_mask=True)
         except Exception:
@@ -361,7 +455,9 @@ class ClientSession:
                                            timeout,
                                            autoclose,
                                            autoping,
-                                           self._loop)
+                                           self._loop,
+                                           receive_timeout=receive_timeout,
+                                           heartbeat=heartbeat)
 
     def _prepare_headers(self, headers):
         """ Add default headers and transform it to CIMultiDict
@@ -434,11 +530,11 @@ class ClientSession:
         Release all acquired resources.
         """
         if not self.closed:
-            self._connector.close()
+            if self._connector_owner:
+                self._connector.close()
             self._connector = None
-        ret = helpers.create_future(self._loop)
-        ret.set_result(None)
-        return ret
+
+        return deprecated_noop('ClientSession.close() is not coroutine')
 
     @property
     def closed(self):
@@ -489,7 +585,7 @@ class ClientSession:
 
         @asyncio.coroutine
         def __aexit__(self, exc_type, exc_val, exc_tb):
-            yield from self.close()
+            self.close()
 
 
 if PY_35:
@@ -553,10 +649,12 @@ class _RequestContextManager(_BaseRequestContextManager):
     if PY_35:
         @asyncio.coroutine
         def __aexit__(self, exc_type, exc, tb):
-            if exc_type is not None:
-                self._resp.close()
-            else:
-                yield from self._resp.release()
+            # We're basing behavior on the exception as it can be caused by
+            # user code unrelated to the status of the connection.  If you
+            # would like to close a connection you must do that
+            # explicitly.  Otherwise connection error handling should kick in
+            # and close/recycle the connection as required.
+            self._resp.release()
 
 
 class _WSRequestContextManager(_BaseRequestContextManager):
@@ -566,7 +664,7 @@ class _WSRequestContextManager(_BaseRequestContextManager):
             yield from self._resp.close()
 
 
-class _DetachedRequestContextManager(_RequestContextManager):
+class _SessionRequestContextManager(_RequestContextManager):
 
     __slots__ = _RequestContextManager.__slots__ + ('_session', )
 
@@ -579,7 +677,7 @@ class _DetachedRequestContextManager(_RequestContextManager):
         try:
             return (yield from self._coro)
         except:
-            yield from self._session.close()
+            self._session.close()
             raise
 
     if PY_35:
@@ -587,54 +685,41 @@ class _DetachedRequestContextManager(_RequestContextManager):
             try:
                 return (yield from self._coro)
             except:
-                yield from self._session.close()
+                self._session.close()
                 raise
 
     def __del__(self):
-        self._session.detach()
-
-
-class _DetachedWSRequestContextManager(_WSRequestContextManager):
-
-    __slots__ = _WSRequestContextManager.__slots__ + ('_session', )
-
-    def __init__(self, coro, session):
-        super().__init__(coro)
-        self._session = session
-
-    def __del__(self):
-        self._session.detach()
+        self._session.close()
 
 
 def request(method, url, *,
             params=None,
             data=None,
+            json=None,
             headers=None,
             skip_auto_headers=None,
             cookies=None,
             auth=None,
             allow_redirects=True,
             max_redirects=10,
-            encoding='utf-8',
-            version=None,
+            encoding=None,
+            version=http.HttpVersion11,
             compress=None,
             chunked=None,
             expect100=False,
             connector=None,
             loop=None,
             read_until_eof=True,
-            request_class=None,
-            response_class=None,
             proxy=None,
             proxy_auth=None):
     """Constructs and sends a request. Returns response object.
-
     method - HTTP method
     url - request url
     params - (optional) Dictionary or bytes to be sent in the query
       string of the new request
     data - (optional) Dictionary, bytes, or file-like object to
       send in the body of the request
+    json - (optional) Any json compatibile python object
     headers - (optional) Dictionary of HTTP Headers to send with
       the request
     cookies - (optional) Dict object to send with the request
@@ -651,111 +736,38 @@ def request(method, url, *,
        connection pooling.
     read_until_eof - Read response until eof if response
        does not have Content-Length header.
-    request_class - (optional) Custom Request class implementation.
-    response_class - (optional) Custom Response class implementation.
     loop - Optional event loop.
-
     Usage::
-
       >>> import aiohttp
       >>> resp = yield from aiohttp.request('GET', 'http://python.org/')
       >>> resp
       <ClientResponse(python.org/) [200]>
       >>> data = yield from resp.read()
-
     """
-    warnings.warn("Use ClientSession().request() instead", DeprecationWarning)
+    connector_owner = False
     if connector is None:
-        connector = aiohttp.TCPConnector(loop=loop, force_close=True)
+        connector_owner = True
+        connector = TCPConnector(loop=loop, force_close=True)
 
-    kwargs = {}
+    session = ClientSession(
+        loop=loop, cookies=cookies, version=version,
+        connector=connector, connector_owner=connector_owner)
 
-    if request_class is not None:
-        kwargs['request_class'] = request_class
-
-    if response_class is not None:
-        kwargs['response_class'] = response_class
-
-    session = ClientSession(loop=loop,
-                            cookies=cookies,
-                            connector=connector,
-                            **kwargs)
-    return _DetachedRequestContextManager(
+    return _SessionRequestContextManager(
         session._request(method, url,
                          params=params,
                          data=data,
+                         json=json,
                          headers=headers,
                          skip_auto_headers=skip_auto_headers,
                          auth=auth,
                          allow_redirects=allow_redirects,
                          max_redirects=max_redirects,
                          encoding=encoding,
-                         version=version,
                          compress=compress,
                          chunked=chunked,
                          expect100=expect100,
                          read_until_eof=read_until_eof,
                          proxy=proxy,
                          proxy_auth=proxy_auth,),
-        session=session)
-
-
-def get(url, **kwargs):
-    warnings.warn("Use ClientSession().get() instead", DeprecationWarning)
-    return request(hdrs.METH_GET, url, **kwargs)
-
-
-def options(url, **kwargs):
-    warnings.warn("Use ClientSession().options() instead", DeprecationWarning)
-    return request(hdrs.METH_OPTIONS, url, **kwargs)
-
-
-def head(url, **kwargs):
-    warnings.warn("Use ClientSession().head() instead", DeprecationWarning)
-    return request(hdrs.METH_HEAD, url, **kwargs)
-
-
-def post(url, **kwargs):
-    warnings.warn("Use ClientSession().post() instead", DeprecationWarning)
-    return request(hdrs.METH_POST, url, **kwargs)
-
-
-def put(url, **kwargs):
-    warnings.warn("Use ClientSession().put() instead", DeprecationWarning)
-    return request(hdrs.METH_PUT, url, **kwargs)
-
-
-def patch(url, **kwargs):
-    warnings.warn("Use ClientSession().patch() instead", DeprecationWarning)
-    return request(hdrs.METH_PATCH, url, **kwargs)
-
-
-def delete(url, **kwargs):
-    warnings.warn("Use ClientSession().delete() instead", DeprecationWarning)
-    return request(hdrs.METH_DELETE, url, **kwargs)
-
-
-def ws_connect(url, *, protocols=(), timeout=10.0, connector=None, auth=None,
-               ws_response_class=ClientWebSocketResponse, autoclose=True,
-               autoping=True, loop=None, origin=None, headers=None):
-
-    warnings.warn("Use ClientSession().ws_connect() instead",
-                  DeprecationWarning)
-    if loop is None:
-        loop = asyncio.get_event_loop()
-
-    if connector is None:
-        connector = aiohttp.TCPConnector(loop=loop, force_close=True)
-
-    session = aiohttp.ClientSession(loop=loop, connector=connector, auth=auth,
-                                    ws_response_class=ws_response_class,
-                                    headers=headers)
-
-    return _DetachedWSRequestContextManager(
-        session._ws_connect(url,
-                            protocols=protocols,
-                            timeout=timeout,
-                            autoclose=autoclose,
-                            autoping=autoping,
-                            origin=origin),
         session=session)

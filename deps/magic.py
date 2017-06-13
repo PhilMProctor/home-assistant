@@ -53,7 +53,7 @@ class Magic:
         self.flags = MAGIC_NONE
         if mime:
             self.flags |= MAGIC_MIME
-        elif mime_encoding:
+        if mime_encoding:
             self.flags |= MAGIC_MIME_ENCODING
         if keep_going:
             self.flags |= MAGIC_CONTINUE
@@ -160,8 +160,11 @@ if not libmagic or not libmagic._name:
                          # Assumes there will only be one version installed
                          glob.glob('/usr/local/Cellar/libmagic/*/lib/libmagic.dylib'),
                        'win32': windows_dlls,
-                       'cygwin': windows_dlls }
-    for dll in platform_to_lib.get(sys.platform, []):
+                       'cygwin': windows_dlls,
+                       'linux': ['libmagic.so.1'],    # fallback for some Linuxes (e.g. Alpine) where library search does not work
+                      }
+    platform = 'linux' if sys.platform.startswith('linux') else sys.platform
+    for dll in platform_to_lib.get(platform, []):
         try:
             libmagic = ctypes.CDLL(dll)
             break

@@ -1,5 +1,5 @@
 # orm/util.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -72,7 +72,7 @@ class CascadeOptions(frozenset):
     def from_string(cls, arg):
         values = [
             c for c
-            in re.split('\s*,\s*', arg or "")
+            in re.split(r'\s*,\s*', arg or "")
             if c
         ]
         return cls(values)
@@ -309,7 +309,7 @@ class ORMAdapter(sql_util.ColumnAdapter):
 
 
 class AliasedClass(object):
-    """Represents an "aliased" form of a mapped class for usage with Query.
+    r"""Represents an "aliased" form of a mapped class for usage with Query.
 
     The ORM equivalent of a :func:`sqlalchemy.sql.expression.alias`
     construct, this object mimics the mapped class using a
@@ -323,8 +323,8 @@ class AliasedClass(object):
 
         # find all pairs of users with the same name
         user_alias = aliased(User)
-        session.query(User, user_alias).\\
-                        join((user_alias, User.id > user_alias.id)).\\
+        session.query(User, user_alias).\
+                        join((user_alias, User.id > user_alias.id)).\
                         filter(User.name==user_alias.name)
 
     The resulting object is an instance of :class:`.AliasedClass`.
@@ -548,6 +548,17 @@ class AliasedInsp(InspectionAttr):
             assert False, "mapper %s doesn't correspond to %s" % (
                 mapper, self)
 
+    @util.memoized_property
+    def _memoized_values(self):
+        return {}
+
+    def _memo(self, key, callable_, *args, **kw):
+        if key in self._memoized_values:
+            return self._memoized_values[key]
+        else:
+            self._memoized_values[key] = value = callable_(*args, **kw)
+            return value
+
     def __repr__(self):
         if self.with_polymorphic_mappers:
             with_poly = "(%s)" % ", ".join(
@@ -636,7 +647,7 @@ def aliased(element, alias=None, name=None, flat=False, adapt_on_names=False):
 
      Above, functions on ``aggregated_unit_price`` which refer to
      ``.price`` will return the
-     ``fund.sum(UnitPrice.price).label('price')`` column, as it is
+     ``func.sum(UnitPrice.price).label('price')`` column, as it is
      matched on the name "price".  Ordinarily, the "price" function
      wouldn't have any "column correspondence" to the actual
      ``UnitPrice.price`` column as it is not a proxy of the original.
@@ -664,18 +675,16 @@ def with_polymorphic(base, classes, selectable=False,
     """Produce an :class:`.AliasedClass` construct which specifies
     columns for descendant mappers of the given base.
 
-    .. versionadded:: 0.8
-        :func:`.orm.with_polymorphic` is in addition to the existing
-        :class:`.Query` method :meth:`.Query.with_polymorphic`,
-        which has the same purpose but is not as flexible in its usage.
-
     Using this method will ensure that each descendant mapper's
     tables are included in the FROM clause, and will allow filter()
     criterion to be used against those tables.  The resulting
     instances will also have those columns already loaded so that
     no "post fetch" of those columns will be required.
 
-    See the examples at :ref:`with_polymorphic`.
+    .. seealso::
+
+        :ref:`with_polymorphic` - full discussion of
+        :func:`.orm.with_polymorphic`.
 
     :param base: Base class to be aliased.
 
@@ -888,7 +897,7 @@ class _ORMJoin(expression.Join):
 def join(
         left, right, onclause=None, isouter=False,
         full=False, join_to_left=None):
-    """Produce an inner join between left and right clauses.
+    r"""Produce an inner join between left and right clauses.
 
     :func:`.orm.join` is an extension to the core join interface
     provided by :func:`.sql.expression.join()`, where the
@@ -907,15 +916,15 @@ def join(
     :meth:`.Query.select_from` method, as in::
 
         from sqlalchemy.orm import join
-        session.query(User).\\
-            select_from(join(User, Address, User.addresses)).\\
+        session.query(User).\
+            select_from(join(User, Address, User.addresses)).\
             filter(Address.email_address=='foo@bar.com')
 
     In modern SQLAlchemy the above join can be written more
     succinctly as::
 
-        session.query(User).\\
-                join(User.addresses).\\
+        session.query(User).\
+                join(User.addresses).\
                 filter(Address.email_address=='foo@bar.com')
 
     See :meth:`.Query.join` for information on modern usage

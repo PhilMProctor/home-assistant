@@ -1,5 +1,5 @@
 # engine/default.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -366,9 +366,10 @@ class DefaultDialect(interfaces.Dialect):
         return sqltypes.adapt_type(typeobj, self.colspecs)
 
     def reflecttable(
-            self, connection, table, include_columns, exclude_columns):
+            self, connection, table, include_columns, exclude_columns, **opts):
         insp = reflection.Inspector.from_engine(connection)
-        return insp.reflecttable(table, include_columns, exclude_columns)
+        return insp.reflecttable(
+            table, include_columns, exclude_columns, **opts)
 
     def get_pk_constraint(self, conn, table_name, schema=None, **kw):
         """Compatibility method, adapts the result of get_primary_keys()
@@ -904,15 +905,15 @@ class DefaultExecutionContext(interfaces.ExecutionContext):
                 row = result.fetchone()
                 self.returned_defaults = row
                 self._setup_ins_pk_from_implicit_returning(row)
-                result._soft_close(_autoclose_connection=False)
+                result._soft_close()
                 result._metadata = None
             elif not self._is_explicit_returning:
-                result._soft_close(_autoclose_connection=False)
+                result._soft_close()
                 result._metadata = None
         elif self.isupdate and self._is_implicit_returning:
             row = result.fetchone()
             self.returned_defaults = row
-            result._soft_close(_autoclose_connection=False)
+            result._soft_close()
             result._metadata = None
 
         elif result._metadata is None:
@@ -920,7 +921,7 @@ class DefaultExecutionContext(interfaces.ExecutionContext):
             # (which requires open cursor on some drivers
             # such as kintersbasdb, mxodbc)
             result.rowcount
-            result._soft_close(_autoclose_connection=False)
+            result._soft_close()
         return result
 
     def _setup_ins_pk_from_lastrowid(self):

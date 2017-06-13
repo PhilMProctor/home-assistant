@@ -1,11 +1,11 @@
 # mysql/base.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: http://www.opensource.org/licenses/mit-license.php
 
-"""
+r"""
 
 .. dialect:: mysql
     :name: MySQL
@@ -205,8 +205,8 @@ Most MySQL DBAPIs offer the option to set the client character set for
 a connection.   This is typically delivered using the ``charset`` parameter
 in the URL, such as::
 
-    e = create_engine("mysql+pymysql://scott:tiger@localhost/\
-test?charset=utf8")
+    e = create_engine(
+        "mysql+pymysql://scott:tiger@localhost/test?charset=utf8")
 
 This charset is the **client character set** for the connection.  Some
 MySQL DBAPIs will default this to a value such as ``latin1``, and some
@@ -224,8 +224,8 @@ that includes codepoints more than three bytes in size,
 this new charset is preferred, if supported by both the database as well
 as the client DBAPI, as in::
 
-    e = create_engine("mysql+pymysql://scott:tiger@localhost/\
-test?charset=utf8mb4")
+    e = create_engine(
+        "mysql+pymysql://scott:tiger@localhost/test?charset=utf8mb4")
 
 At the moment, up-to-date versions of MySQLdb and PyMySQL support the
 ``utf8mb4`` charset.   Other DBAPIs such as MySQL-Connector and OurSQL
@@ -237,8 +237,8 @@ the MySQL schema and/or server configuration may be required.
 .. seealso::
 
     `The utf8mb4 Character Set \
-<http://dev.mysql.com/doc/refman/5.5/en/charset-unicode-utf8mb4.html>`_ - \
-in the MySQL documentation
+    <http://dev.mysql.com/doc/refman/5.5/en/charset-unicode-utf8mb4.html>`_ - \
+    in the MySQL documentation
 
 Unicode Encoding / Decoding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -259,7 +259,8 @@ DBAPI's handling of unicode, such that it instead will return data of the
 ``str`` type or ``bytes`` type, with data in the configured charset::
 
     # connect while disabling the DBAPI's unicode encoding/decoding
-    e = create_engine("mysql+mysqldb://scott:tiger@localhost/test?charset=utf8&use_unicode=0")
+    e = create_engine(
+        "mysql+mysqldb://scott:tiger@localhost/test?charset=utf8&use_unicode=0")
 
 Current recommendations for modern DBAPIs are as follows:
 
@@ -390,6 +391,26 @@ BLOB.
 
 .. versionadded:: 0.8.2 ``mysql_length`` may now be specified as a dictionary
    for use with composite indexes.
+
+Index Prefixes
+~~~~~~~~~~~~~~
+
+MySQL storage engines permit you to specify an index prefix when creating
+an index. SQLAlchemy provides this feature via the
+``mysql_prefix`` parameter on :class:`.Index`::
+
+    Index('my_index', my_table.c.data, mysql_prefix='FULLTEXT')
+
+The value passed to the keyword argument will be simply passed through to the
+underlying CREATE INDEX, so it *must* be a valid index prefix for your MySQL
+storage engine.
+
+.. versionadded:: 1.1.5
+
+.. seealso::
+
+    `CREATE INDEX <http://dev.mysql.com/doc/refman/5.0/en/create-index.html>`_ - \
+    MySQL documentation
 
 Index Types
 ~~~~~~~~~~~~~
@@ -657,6 +678,9 @@ RESERVED_WORDS = set(
 
      'generated', 'optimizer_costs', 'stored', 'virtual',  # 5.7
 
+     'admin', 'except', 'grouping', 'of', 'persist', 'recursive',
+        'role',  # 8.0
+
      ])
 
 AUTOCOMMIT_RE = re.compile(
@@ -776,9 +800,6 @@ class MySQLCompiler(compiler.SQLCompiler):
 
     def visit_random_func(self, fn, **kw):
         return "rand%s" % self.function_argspec(fn)
-
-    def visit_utc_timestamp_func(self, fn, **kw):
-        return "UTC_TIMESTAMP"
 
     def visit_sysdate_func(self, fn, **kw):
         return "SYSDATE()"
@@ -1001,11 +1022,18 @@ class MySQLDDLCompiler(compiler.DDLCompiler):
             if k.startswith('%s_' % self.dialect.name)
         )
 
+        partition_options = [
+            'PARTITION_BY', 'PARTITIONS', 'SUBPARTITIONS',
+            'SUBPARTITION_BY'
+        ]
+
+        nonpart_options = set(opts).difference(partition_options)
+        part_options = set(opts).intersection(partition_options)
+
         for opt in topological.sort([
             ('DEFAULT_CHARSET', 'COLLATE'),
             ('DEFAULT_CHARACTER_SET', 'COLLATE'),
-            ('PARTITION_BY', 'PARTITIONS'),  # only for test consistency
-        ], opts):
+        ], nonpart_options):
             arg = opts[opt]
             if opt in _reflection._options_of_type_string:
                 arg = "'%s'" % arg.replace("\\", "\\\\").replace("'", "''")
@@ -1013,16 +1041,33 @@ class MySQLDDLCompiler(compiler.DDLCompiler):
             if opt in ('DATA_DIRECTORY', 'INDEX_DIRECTORY',
                        'DEFAULT_CHARACTER_SET', 'CHARACTER_SET',
                        'DEFAULT_CHARSET',
-                       'DEFAULT_COLLATE', 'PARTITION_BY'):
+                       'DEFAULT_COLLATE'):
                 opt = opt.replace('_', ' ')
 
             joiner = '='
             if opt in ('TABLESPACE', 'DEFAULT CHARACTER SET',
-                       'CHARACTER SET', 'COLLATE',
-                       'PARTITION BY', 'PARTITIONS'):
+                       'CHARACTER SET', 'COLLATE'):
                 joiner = ' '
 
             table_opts.append(joiner.join((opt, arg)))
+
+        for opt in topological.sort([
+            ('PARTITION_BY', 'PARTITIONS'),
+            ('PARTITION_BY', 'SUBPARTITION_BY'),
+            ('PARTITION_BY', 'SUBPARTITIONS'),
+            ('PARTITIONS', 'SUBPARTITIONS'),
+            ('PARTITIONS', 'SUBPARTITION_BY'),
+            ('SUBPARTITION_BY', 'SUBPARTITIONS')
+        ], part_options):
+            arg = opts[opt]
+            if opt in _reflection._options_of_type_string:
+                arg = "'%s'" % arg.replace("\\", "\\\\").replace("'", "''")
+
+            opt = opt.replace('_', ' ')
+            joiner = ' '
+
+            table_opts.append(joiner.join((opt, arg)))
+
         return ' '.join(table_opts)
 
     def visit_create_index(self, create):
@@ -1039,6 +1084,11 @@ class MySQLDDLCompiler(compiler.DDLCompiler):
         text = "CREATE "
         if index.unique:
             text += "UNIQUE "
+
+        index_prefix = index.kwargs.get('mysql_prefix', None)
+        if index_prefix:
+          text += index_prefix + ' '
+
         text += "INDEX %s ON %s " % (name, table)
 
         length = index.dialect_options['mysql']['length']
@@ -1468,6 +1518,7 @@ class MySQLDialect(default.DefaultDialect):
         (sa_schema.Index, {
             "using": None,
             "length": None,
+            "prefix": None,
         })
     ]
 

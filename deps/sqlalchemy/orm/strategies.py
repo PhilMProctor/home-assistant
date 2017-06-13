@@ -1,5 +1,5 @@
 # orm/strategies.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -851,11 +851,14 @@ class SubqueryLoader(AbstractRelationshipLoader):
 
         # set a real "from" if not present, as this is more
         # accurate than just going off of the column expression
-        if not q._from_obj and orig_entity.mapper.isa(leftmost_mapper):
+        if not q._from_obj and orig_entity.is_mapper and \
+                orig_entity.mapper.isa(leftmost_mapper):
             q._set_select_from([orig_entity], False)
         target_cols = q._adapt_col_list(leftmost_attr)
 
-        # select from the identity columns of the outer
+        # select from the identity columns of the outer.  This will remove
+        # other columns from the query that might suggest the right entity
+        # which is why we try to _set_select_from above.
         q._set_entities(target_cols)
 
         distinct_target_key = leftmost_relationship.distinct_target_key
@@ -1087,7 +1090,15 @@ class SubqueryLoader(AbstractRelationshipLoader):
             state.get_impl(self.key).\
                 set_committed_value(state, dict_, collection)
 
-        populators["new"].append((self.key, load_collection_from_subq))
+        def load_collection_from_subq_existing_row(state, dict_, row):
+            if self.key not in dict_:
+                load_collection_from_subq(state, dict_, row)
+
+        populators["new"].append(
+            (self.key, load_collection_from_subq))
+        populators["existing"].append(
+            (self.key, load_collection_from_subq_existing_row))
+
         if context.invoke_all_eagers:
             populators["eager"].append((self.key, collections.loader))
 
@@ -1108,7 +1119,14 @@ class SubqueryLoader(AbstractRelationshipLoader):
             state.get_impl(self.key).\
                 set_committed_value(state, dict_, scalar)
 
-        populators["new"].append((self.key, load_scalar_from_subq))
+        def load_scalar_from_subq_existing_row(state, dict_, row):
+            if self.key not in dict_:
+                load_scalar_from_subq(state, dict_, row)
+
+        populators["new"].append(
+            (self.key, load_scalar_from_subq))
+        populators["existing"].append(
+            (self.key, load_scalar_from_subq_existing_row))
         if context.invoke_all_eagers:
             populators["eager"].append((self.key, collections.loader))
 
@@ -1122,11 +1140,12 @@ class JoinedLoader(AbstractRelationshipLoader):
 
     """
 
-    __slots__ = 'join_depth',
+    __slots__ = 'join_depth', '_aliased_class_pool'
 
     def __init__(self, parent, strategy_key):
         super(JoinedLoader, self).__init__(parent, strategy_key)
         self.join_depth = self.parent_property.join_depth
+        self._aliased_class_pool = []
 
     def init_class_attribute(self, mapper):
         self.parent_property.\
@@ -1274,6 +1293,31 @@ class JoinedLoader(AbstractRelationshipLoader):
         add_to_collection = context.primary_columns
         return user_defined_adapter, adapter, add_to_collection
 
+    def _gen_pooled_aliased_class(self, context):
+        # keep a local pool of AliasedClass objects that get re-used.
+        # we need one unique AliasedClass per query per appearance of our
+        # entity in the query.
+
+        key = ('joinedloader_ac', self)
+        if key not in context.attributes:
+            context.attributes[key] = idx = 0
+        else:
+            context.attributes[key] = idx = context.attributes[key] + 1
+
+        if idx >= len(self._aliased_class_pool):
+            to_adapt = orm_util.AliasedClass(
+                self.mapper,
+                flat=True,
+                use_mapper_path=True)
+            # load up the .columns collection on the Alias() before
+            # the object becomes shared among threads.  this prevents
+            # races for column identities.
+            inspect(to_adapt).selectable.c
+
+            self._aliased_class_pool.append(to_adapt)
+
+        return self._aliased_class_pool[idx]
+
     def _generate_row_adapter(
             self,
             context, entity, path, loadopt, adapter,
@@ -1286,15 +1330,17 @@ class JoinedLoader(AbstractRelationshipLoader):
         if with_poly_info:
             to_adapt = with_poly_info.entity
         else:
-            to_adapt = orm_util.AliasedClass(
-                self.mapper,
-                flat=True,
-                use_mapper_path=True)
-        clauses = orm_util.ORMAdapter(
+            to_adapt = self._gen_pooled_aliased_class(context)
+
+        clauses = inspect(to_adapt)._memo(
+            ("joinedloader_ormadapter", self),
+            orm_util.ORMAdapter,
             to_adapt,
             equivalents=self.mapper._equivalent_columns,
             adapt_required=True, allow_label_resolve=False,
-            anonymize_labels=True)
+            anonymize_labels=True
+        )
+
         assert clauses.aliased_class is not None
 
         if self.parent_property.uselist:
@@ -1368,8 +1414,8 @@ class JoinedLoader(AbstractRelationshipLoader):
                 # name on it.
                 efm = inspect(adapter.aliased_class).\
                     _entity_for_mapper(
-                        parentmapper
-                        if parentmapper.isa(self.parent) else self.parent)
+                        localparent
+                        if localparent.isa(self.parent) else self.parent)
 
                 # look for our attribute on the adapted entity, else fall back
                 # to our straight property

@@ -7,3 +7,43 @@
     optimistic: false
     qos: 0
     retain: true
+
+  - platform: mqtt
+    name: "House Thermostat Away"
+    state_topic: "home/switch/house/away/set"
+    command_topic: "home/switch/house/away/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: false
+    qos: 0
+    retain: true
+
+  - platform: mqtt
+    name: "Hutch Heater"
+    state_topic: "home/switch/hutch/switch1/set"
+    command_topic: "home/switch/hutch/switch1/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: false
+    qos: 0
+    retain: true
+
+  - platform: mqtt
+    name: "Hutch Thermostat Away"
+    state_topic: "home/switch/hutch/away/set"
+    command_topic: "home/switch/hutch/away/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: false
+    qos: 0
+    retain: true
+
+  - platform: mqtt
+    name: "Landing Heater"
+    state_topic: "home/switch/landing/switch1"
+    command_topic: "home/switch/landing/switch1/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: false
+    qos: 0
+    retain: true

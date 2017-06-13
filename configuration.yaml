@@ -8,6 +8,11 @@ homeassistant:
   customize: !include customize.yaml
 
 frontend:
+logger:
+  logs:
+    homeassistant.components.mqtt: debug
+
+config:
 
 http:
   api_password: !secret http_password
@@ -20,7 +25,7 @@ http:
 updater:
 
 # Discover some devices automatically
-discovery:
+#discovery:
 
 # Allows you to issue voice commands from the frontend in enabled browsers
 conversation:
@@ -31,20 +36,26 @@ history:
 # View all events in a logbook
 logbook:
 
+# Database housekeeping
+recorder:
+  purge_days: 8
+
 # Track the sun
 sun:
 
 mqtt:
-  broker: 10.44.3.33
-  port: 8883
+  broker: localhost
+  port: 1883
   client_id: home-assistant-1
   username: !secret mqtt_username
   password: !secret mqtt_password
+  keepalive: 60
 
 sensor: !include_dir_merge_list devices/sensors
 switch: !include_dir_merge_list devices/switches
-automation: !include_dir_merge_list automation
+automation: !include automations.yaml
 scene: !include scenes.yaml
+#binary_sensor: !include binary_sensor.yaml
 
 zone:
   name: Home
@@ -64,43 +75,78 @@ zone 3:
   name: Gym
   latitude: 53.263738
   longitude: -2.891398
-  radius: 200
+  radius: 100
   icon: mdi:run
 
 zone 4:
   name: Work
   latitude: 53.347792
   longitude: -2.878179
-  radius: 200
+  radius: 100
   icon: mdi:briefcase
 
 zone 5:
   name: Lodge
   latitude: 52.867931
   longitude: -3.908915
-  radius: 200
+  radius: 100
   icon: mdi:home
   
-panel_custom:
-  - name: hello
-    sidebar_title: Hello World
-    sidebar_icon: mdi:hand-pointing-right
-    url_path: hello
-    config:
-      title: hello
-
 notify:
-  - name: SMS
-    platform: twilio_sms
-    account_sid: !secret twilio_sid
-    auth_token: !secret twilio_token
-    from_number: !secret my_number
-
   - name: pushbullet
     platform: pushbullet
     api_key: !secret pb_api
 
-#input_slider: !include input_sliders.yaml
+input_slider:
+  house_heat_on_hr:
+    name: 'Heat On Hour'
+    min: 00
+    max: 23
+    initial: 06
+    step: 1
+    icon: mdi:clock
+    unit_of_measurement: 'Hours'
+
+  house_heat_on_min:
+    name: 'Heat On Min'
+    min: 00
+    max: 45
+    initial: 00
+    step: 15
+    icon: mdi:clock
+    unit_of_measurement: 'Min'
+
+  house_heat_off_hr:
+    name: 'Heat Off Hour'
+    min: 00
+    max: 23
+    initial: 06
+    step: 1
+    icon: mdi:clock
+    unit_of_measurement: 'Hours'
+
+  house_heat_off_min:
+    name: 'Heat Off Min'
+    min: 00
+    max: 45
+    initial: 00
+    step: 15
+    icon: mdi:clock
+    unit_of_measurement: 'Min'
+
+input_select:
+  heating_thermostat_state:
+    name: 'House Thermostat Away Mode'
+    options:
+      - 'On'
+      - 'Off'
+    icon: mdi:target
+  hutch_thermostat_state:
+    name: 'Hutch Thermostat Away Mode'
+    options:
+      - 'On'
+      - 'Off'
+    icon: mdi:target
 
 device_tracker:
   - platform: owntracks
@@ -124,3 +170,47 @@ script:
     sequence:
       - service: device_tracker.see
         entity_id: device_tracker.18fe34dabbd5
+
+#media_player:
+# - platform: kodi
+#    name: Hutch kodi
+#    host: 10.44.3.223
+
+climate:
+  - platform: generic_thermostat
+    name: House
+    heater: switch.heating_switch
+    target_sensor: sensor.hallway
+    min_temp: 13
+    max_temp: 21
+    target_temp: 18.5
+    tolerance: 0.3
+    min_cycle_duration:
+      seconds: 5
+    keep_alive:
+      minutes: 3
+
+  - platform: generic_thermostat
+    name: Hutch
+    heater: switch.hutch_heater
+    target_sensor: sensor.hutch
+    min_temp: 1
+    max_temp: 21
+    target_temp: 18.5
+    tolerance: 0.3
+    min_cycle_duration:
+      seconds: 5
+    keep_alive:
+      minutes: 3
+
+android_ip_webcam:
+  - host: 10.44.3.225:8081
+    scan_interval: 120
+    name: 'Camera 1'
+    username: 'admin'
+    password: !secret camera_pw
+    switches:
+      - focus
+    sensors:
+      - battery_level
+    motion_sensor: true

@@ -1,4 +1,5 @@
-from .web_reqrep import Response
+from .web_response import Response
+
 
 __all__ = (
     'HTTPException',
@@ -40,6 +41,8 @@ __all__ = (
     'HTTPRequestRangeNotSatisfiable',
     'HTTPExpectationFailed',
     'HTTPMisdirectedRequest',
+    'HTTPUnprocessableEntity',
+    'HTTPFailedDependency',
     'HTTPUpgradeRequired',
     'HTTPPreconditionRequired',
     'HTTPTooManyRequests',
@@ -53,6 +56,7 @@ __all__ = (
     'HTTPGatewayTimeout',
     'HTTPVersionNotSupported',
     'HTTPVariantAlsoNegotiates',
+    'HTTPInsufficientStorage',
     'HTTPNotExtended',
     'HTTPNetworkAuthenticationRequired',
 )
@@ -270,6 +274,14 @@ class HTTPMisdirectedRequest(HTTPClientError):
     status_code = 421
 
 
+class HTTPUnprocessableEntity(HTTPClientError):
+    status_code = 422
+
+
+class HTTPFailedDependency(HTTPClientError):
+    status_code = 424
+
+
 class HTTPUpgradeRequired(HTTPClientError):
     status_code = 426
 
@@ -339,6 +351,10 @@ class HTTPVersionNotSupported(HTTPServerError):
 
 class HTTPVariantAlsoNegotiates(HTTPServerError):
     status_code = 506
+
+
+class HTTPInsufficientStorage(HTTPServerError):
+    status_code = 507
 
 
 class HTTPNotExtended(HTTPServerError):

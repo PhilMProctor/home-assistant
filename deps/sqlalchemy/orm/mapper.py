@@ -1,5 +1,5 @@
 # orm/mapper.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -118,7 +118,7 @@ class Mapper(InspectionAttr):
                  legacy_is_orphan=False,
                  _compiled_cache_size=100,
                  ):
-        """Return a new :class:`~.Mapper` object.
+        r"""Return a new :class:`~.Mapper` object.
 
         This function is typically used behind the scenes
         via the Declarative extension.   When using Declarative,
@@ -698,7 +698,7 @@ class Mapper(InspectionAttr):
 
     @property
     def entity(self):
-        """Part of the inspection API.
+        r"""Part of the inspection API.
 
         Returns self.class\_.
 
@@ -2042,6 +2042,22 @@ class Mapper(InspectionAttr):
         )
 
     @_memoized_configured_property
+    def _server_default_plus_onupdate_propkeys(self):
+        result = set()
+
+        for table, columns in self._cols_by_table.items():
+            for col in columns:
+                if (
+                        (
+                            col.server_default is not None or
+                            col.server_onupdate is not None
+                        ) and col in self._columntoproperty
+                ):
+                    result.add(self._columntoproperty[col].key)
+
+        return result
+
+    @_memoized_configured_property
     def _server_onupdate_default_cols(self):
         return dict(
             (
@@ -2673,7 +2689,9 @@ class Mapper(InspectionAttr):
         visited_states = set()
         prp, mpp = object(), object()
 
-        visitables = deque([(deque(self._props.values()), prp,
+        assert state.mapper.isa(self)
+
+        visitables = deque([(deque(state.mapper._props.values()), prp,
                              state, state.dict)])
 
         while visitables:
@@ -2696,9 +2714,13 @@ class Mapper(InspectionAttr):
                     corresponding_dict = iterator.popleft()
                 yield instance, instance_mapper, \
                     corresponding_state, corresponding_dict
-                visitables.append((deque(instance_mapper._props.values()),
-                                   prp, corresponding_state,
-                                   corresponding_dict))
+                visitables.append(
+                    (
+                        deque(instance_mapper._props.values()),
+                        prp, corresponding_state,
+                        corresponding_dict
+                    )
+                )
 
     @_memoized_configured_property
     def _compiled_cache(self):
@@ -2886,7 +2908,7 @@ def reconstructor(fn):
 
 
 def validates(*names, **kw):
-    """Decorate a method as a 'validator' for one or more named properties.
+    r"""Decorate a method as a 'validator' for one or more named properties.
 
     Designates a method as a validator, a method which receives the
     name of the attribute as well as a value to be assigned, or in the

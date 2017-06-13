@@ -1,14 +1,15 @@
 # postgresql/base.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: http://www.opensource.org/licenses/mit-license.php
 
-"""
+r"""
 .. dialect:: postgresql
     :name: PostgreSQL
 
+.. _postgresql_sequences:
 
 Sequences/SERIAL
 ----------------
@@ -233,17 +234,17 @@ primary key identifiers.   To specify an explicit ``RETURNING`` clause,
 use the :meth:`._UpdateBase.returning` method on a per-statement basis::
 
     # INSERT..RETURNING
-    result = table.insert().returning(table.c.col1, table.c.col2).\\
+    result = table.insert().returning(table.c.col1, table.c.col2).\
         values(name='foo')
     print result.fetchall()
 
     # UPDATE..RETURNING
-    result = table.update().returning(table.c.col1, table.c.col2).\\
+    result = table.update().returning(table.c.col1, table.c.col2).\
         where(table.c.name=='foo').values(name='bar')
     print result.fetchall()
 
     # DELETE..RETURNING
-    result = table.delete().returning(table.c.col1, table.c.col2).\\
+    result = table.delete().returning(table.c.col1, table.c.col2).\
         where(table.c.name=='foo')
     print result.fetchall()
 
@@ -565,19 +566,30 @@ http://www.postgresql.org/docs/8.3/interactive/indexes-opclass.html).
 The :class:`.Index` construct allows these to be specified via the
 ``postgresql_ops`` keyword argument::
 
-    Index('my_index', my_table.c.id, my_table.c.data,
-                            postgresql_ops={
-                                'data': 'text_pattern_ops',
-                                'id': 'int4_ops'
-                            })
-
-.. versionadded:: 0.7.2
-    ``postgresql_ops`` keyword argument to :class:`.Index` construct.
+    Index(
+        'my_index', my_table.c.id, my_table.c.data,
+        postgresql_ops={
+            'data': 'text_pattern_ops',
+            'id': 'int4_ops'
+        })
 
 Note that the keys in the ``postgresql_ops`` dictionary are the "key" name of
 the :class:`.Column`, i.e. the name used to access it from the ``.c``
 collection of :class:`.Table`, which can be configured to be different than
 the actual name of the column as expressed in the database.
+
+If ``postgresql_ops`` is to be used against a complex SQL expression such
+as a function call, then to apply to the column it must be given a label
+that is identified in the dictionary by name, e.g.::
+
+    Index(
+        'my_index', my_table.c.id,
+        func.lower(my_table.c.data).label('data_lower'),
+        postgresql_ops={
+            'data_lower': 'text_pattern_ops',
+            'id': 'int4_ops'
+        })
+
 
 Index Types
 ^^^^^^^^^^^^
@@ -644,6 +656,25 @@ a connection-less dialect, it will emit::
    of PostgreSQL is detected on the connection (or for a connection-less
    dialect).
 
+When using CONCURRENTLY, the Postgresql database requires that the statement
+be invoked outside of a transaction block.   The Python DBAPI enforces that
+even for a single statement, a transaction is present, so to use this
+construct, the DBAPI's "autocommit" mode must be used::
+
+    metadata = MetaData()
+    table = Table(
+        "foo", metadata,
+        Column("id", String))
+    index = Index(
+        "foo_idx", table.c.id, postgresql_concurrently=True)
+
+    with engine.connect() as conn:
+        with conn.execution_options(isolation_level='AUTOCOMMIT'):
+            table.create(conn)
+
+.. seealso::
+
+    :ref:`postgresql_isolation_level`
 
 .. _postgresql_index_reflection:
 
@@ -814,12 +845,36 @@ This type is not included as a built-in type as it would be incompatible
 with a DBAPI that suddenly decides to support ARRAY of ENUM directly in
 a new version.
 
+.. _postgresql_array_of_json:
+
+Using JSON/JSONB with ARRAY
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Similar to using ENUM, for an ARRAY of JSON/JSONB we need to render the
+appropriate CAST, however current psycopg2 drivers seem to handle the result
+for ARRAY of JSON automatically, so the type is simpler::
+
+
+    class CastingArray(ARRAY):
+        def bind_expression(self, bindvalue):
+            return sa.cast(bindvalue, self)
+
+E.g.::
+
+    Table(
+        'mydata', metadata,
+        Column('id', Integer, primary_key=True),
+        Column('data', CastingArray(JSONB))
+    )
+
+
 """
 from collections import defaultdict
 import re
 import datetime as dt
 
 
+from sqlalchemy.sql import elements
 from ... import sql, schema, exc, util
 from ...engine import default, reflection
 from ...sql import compiler, expression
@@ -833,6 +888,11 @@ except ImportError:
 from sqlalchemy.types import INTEGER, BIGINT, SMALLINT, VARCHAR, \
     CHAR, TEXT, FLOAT, NUMERIC, \
     DATE, BOOLEAN, REAL
+
+AUTOCOMMIT_REGEXP = re.compile(
+    r'\s*(?:UPDATE|INSERT|CREATE|DELETE|DROP|ALTER|GRANT|REVOKE|'
+    'IMPORT FOREIGN SCHEMA|REFRESH MATERIALIZED VIEW)',
+    re.I | re.UNICODE)
 
 RESERVED_WORDS = set(
     ["all", "analyse", "analyze", "and", "any", "array", "as", "asc",
@@ -1196,24 +1256,24 @@ class ENUM(sqltypes.Enum):
         else:
             return False
 
-    def _on_table_create(self, target, bind, checkfirst, **kw):
+    def _on_table_create(self, target, bind, checkfirst=False, **kw):
         if checkfirst or (
                 not self.metadata and
                 not kw.get('_is_metadata_operation', False)) and \
                 not self._check_for_name_in_memos(checkfirst, kw):
             self.create(bind=bind, checkfirst=checkfirst)
 
-    def _on_table_drop(self, target, bind, checkfirst, **kw):
+    def _on_table_drop(self, target, bind, checkfirst=False, **kw):
         if not self.metadata and \
             not kw.get('_is_metadata_operation', False) and \
                 not self._check_for_name_in_memos(checkfirst, kw):
             self.drop(bind=bind, checkfirst=checkfirst)
 
-    def _on_metadata_create(self, target, bind, checkfirst, **kw):
+    def _on_metadata_create(self, target, bind, checkfirst=False, **kw):
         if not self._check_for_name_in_memos(checkfirst, kw):
             self.create(bind=bind, checkfirst=checkfirst)
 
-    def _on_metadata_drop(self, target, bind, checkfirst, **kw):
+    def _on_metadata_drop(self, target, bind, checkfirst=False, **kw):
         if not self._check_for_name_in_memos(checkfirst, kw):
             self.drop(bind=bind, checkfirst=checkfirst)
 
@@ -1457,17 +1517,52 @@ class PGCompiler(compiler.SQLCompiler):
         target_text = self._on_conflict_target(on_conflict, **kw)
 
         action_set_ops = []
-        for k, v in clause.update_values_to_set:
-            key_text = (
-                self.preparer.quote(k)
-                if isinstance(k, util.string_types)
-                else self.process(k, use_schema=False)
+
+        set_parameters = dict(clause.update_values_to_set)
+        # create a list of column assignment clauses as tuples
+        cols = self.statement.table.c
+        for c in cols:
+            col_key = c.key
+            if col_key in set_parameters:
+                value = set_parameters.pop(col_key)
+                if elements._is_literal(value):
+                    value = elements.BindParameter(
+                        None, value, type_=c.type
+                    )
+
+                else:
+                    if isinstance(value, elements.BindParameter) and \
+                            value.type._isnull:
+                        value = value._clone()
+                        value.type = c.type
+                value_text = self.process(value.self_group(), use_schema=False)
+
+                key_text = (
+                    self.preparer.quote(col_key)
+                )
+                action_set_ops.append('%s = %s' % (key_text, value_text))
+
+        # check for names that don't match columns
+        if set_parameters:
+            util.warn(
+                "Additional column names not matching "
+                "any column keys in table '%s': %s" % (
+                    self.statement.table.name,
+                    (", ".join("'%s'" % c for c in set_parameters))
+                )
             )
-            value_text = self.process(
-                v,
-                use_schema=False
-            )
-            action_set_ops.append('%s = %s' % (key_text, value_text))
+            for k, v in set_parameters.items():
+                key_text = (
+                    self.preparer.quote(k)
+                    if isinstance(k, util.string_types)
+                    else self.process(k, use_schema=False)
+                )
+                value_text = self.process(
+                    elements._literal_as_binds(v),
+                    use_schema=False
+                )
+                action_set_ops.append('%s = %s' % (key_text, value_text))
+
         action_text = ', '.join(action_set_ops)
         if clause.update_whereclause is not None:
             action_text += ' WHERE %s' % \
@@ -1730,15 +1825,15 @@ class PGTypeCompiler(compiler.GenericTypeCompiler):
 
     def visit_TIMESTAMP(self, type_, **kw):
         return "TIMESTAMP%s %s" % (
-            getattr(type_, 'precision', None) and "(%d)" %
-            type_.precision or "",
+            "(%d)" % type_.precision
+            if getattr(type_, 'precision', None) is not None else "",
             (type_.timezone and "WITH" or "WITHOUT") + " TIME ZONE"
         )
 
     def visit_TIME(self, type_, **kw):
         return "TIME%s %s" % (
-            getattr(type_, 'precision', None) and "(%d)" %
-            type_.precision or "",
+            "(%d)" % type_.precision
+            if getattr(type_, 'precision', None) is not None else "",
             (type_.timezone and "WITH" or "WITHOUT") + " TIME ZONE"
         )
 
@@ -1918,6 +2013,9 @@ class PGExecutionContext(default.DefaultExecutionContext):
                 return self._execute_scalar(exc, column.type)
 
         return super(PGExecutionContext, self).get_insert_default(column)
+
+    def should_autocommit_text(self, statement):
+        return AUTOCOMMIT_REGEXP.match(statement)
 
 
 class PGDialect(default.DefaultDialect):
@@ -2192,8 +2290,8 @@ class PGDialect(default.DefaultDialect):
     def _get_server_version_info(self, connection):
         v = connection.execute("select version()").scalar()
         m = re.match(
-            '.*(?:PostgreSQL|EnterpriseDB) '
-            '(\d+)\.(\d+)(?:\.(\d+))?(?:\.\d+)?(?:devel)?',
+            r'.*(?:PostgreSQL|EnterpriseDB) '
+            r'(\d+)\.?(\d+)?(?:\.(\d+))?(?:\.\d+)?(?:devel)?',
             v)
         if not m:
             raise AssertionError(
@@ -2358,12 +2456,12 @@ class PGDialect(default.DefaultDialect):
 
         nullable = not notnull
         is_array = format_type.endswith('[]')
-        charlen = re.search('\(([\d,]+)\)', format_type)
+        charlen = re.search(r'\(([\d,]+)\)', format_type)
         if charlen:
             charlen = charlen.group(1)
-        args = re.search('\((.*)\)', format_type)
+        args = re.search(r'\((.*)\)', format_type)
         if args and args.group(1):
-            args = tuple(re.split('\s*,\s*', args.group(1)))
+            args = tuple(re.split(r'\s*,\s*', args.group(1)))
         else:
             args = ()
         kwargs = {}
@@ -2883,7 +2981,7 @@ class PGDialect(default.DefaultDialect):
         domains = {}
         for domain in c.fetchall():
             # strip (30) from character varying(30)
-            attype = re.search('([^\(]+)', domain['attype']).group(1)
+            attype = re.search(r'([^\(]+)', domain['attype']).group(1)
             if domain['visible']:
                 # 'visible' just means whether or not the domain is in a
                 # schema that's on the search path -- or not overridden by

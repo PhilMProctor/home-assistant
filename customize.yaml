@@ -63,3 +63,32 @@ sensor.speedtest_upload:
   icon: mdi:upload
 sensor.speedtest_ping:
   icon: mdi:speedometer
+
+sensor.pws_observation_time:
+  friendly_name: 'Update'
+  icon: mdi:clock
+sensor.pws_feelslike_c:
+  friendly_name: 'Temp Feels Like'
+sensor.pws_pressure_mb:
+  friendly_name: 'Pressure'
+  icon: mdi:gauge
+sensor.pws_relative_humidity:
+  friendly_name: 'Humidity'
+  icon: mdi:water
+sensor.pws_temp_c:
+  friendly_name: 'Temp'
+sensor.pws_wind_dir:
+  friendly_name: 'Wind Direction'
+  icon: mdi:compass
+sensor.pws_wind_mph:
+  friendly_name: 'Wind Speed'
+  icon: mdi:weather-windy
+sensor.pws_wind_gust_mph:
+  friendly_name: 'Wind Gust'
+  icon: mdi:weather-windy
+sensor.pws_wind_string:
+  friendly_name: 'Wind State'
+  icon: mdi:weather-windy
+sensor.pws_weather:
+  friendly_name: 'Weather'
+  icon: mdi:weather-partlycloudy

@@ -22,19 +22,3 @@
         state: off
       switch.hutch_heater:
         state: off
-
-  - name: 'House heating ON'
-    entities:
-      automation.house_heating_on:
-        state: on
-      automation.house_heating_off:
-        state: on
-
-  - name: 'House heating OFF'
-    entities:
-      automation.house_heating_on:
-        state: off
-      automation.house_heating_off:
-        state: off
-      switch.heating_switch:
-        state: off

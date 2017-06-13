@@ -3,15 +3,26 @@
     - platform: sun
       event: sunset
       offset: '-00:15:00'
-  condition:
+#  condition:
     # Prefix the first line of each condition configuration
     # with a '-'' to enter multiple
-    - condition: state
-      entity_id: group.family
-      state: 'home'
+ #   - condition: state
+  #    entity_id: group.family
+   #   state: 'home'
   action:
     service: switch.turn_on
     entity_id: switch.lounge_lights
+
+- alias: 'Random - Lounge Lights Off'
+  trigger:
+  - platform: time
+    after: '23:00:00'
+  condition:
+  - condition: state
+    entity_id: group.family
+    state: 'not_home'
+  action:
+  - delay: '{{ ((range(0, 1) | random) | int) ~ ":" ~ ((range(5, 55) | random) | int)  ~ ":" ~  ((range(5, 55) | random) | int) }}'
 
 - alias: 'Reset lights automation'
   trigger:

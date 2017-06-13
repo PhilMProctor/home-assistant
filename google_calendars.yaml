@@ -55,11 +55,33 @@
 
 - cal_id: epd7sbm0rbsa5phq7hshtgqigs@group.calendar.google.com
   entities:
-  - device_id: hass_control_heating
-    name: 'HASS Control Heating'
+  - device_id: hass_control_heating1
+    name: 'HASS Control Heating 1'
     track: true
-    search: 'Heating'
-  - device_id: hass_control_lighting
-    name: 'HASS Control Lighting'
+    search: 'Heating1'
+  - device_id: hass_control_lighting1
+    name: 'HASS Control Lighting 1'
     track: true
-    search: 'Lighting'
+    search: 'Lighting1'
+  - device_id: hass_control_heating2
+    name: 'HASS Control Heating 2'
+    track: true
+    search: 'Heating2'
+  - device_id: hass_control_lighting2
+    name: 'HASS Control Lighting 2'
+    track: true
+    search: 'Lighting2'
+  - device_id: hass_control_heating3
+    name: 'HASS Control Heating 3'
+    track: true
+    search: 'Heating3'
+  - device_id: hass_control_lighting3
+    name: 'HASS Control Lighting3'
+    track: true
+    search: 'Lighting3'
+
+- cal_id: family17126971567065809593@group.calendar.google.com
+  entities:
+  - device_id: family
+    name: Family
+    track: true

@@ -18,7 +18,6 @@
     state_topic: "home/sensor/hutch/temperature"
     name: "Hutch"
     unit_of_measurement: '°C'
-    scan_interval: 60
   - platform: mqtt
     state_topic: "home/sensor/hutch/humidity"
     name: "Hutch_h"

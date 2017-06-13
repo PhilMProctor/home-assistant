@@ -1,5 +1,5 @@
 # mssql/base.py
-# Copyright (C) 2005-2016 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -1022,7 +1022,8 @@ class MSExecutionContext(default.DefaultExecutionContext):
             else:
                 self._enable_identity_insert = False
 
-            self._select_lastrowid = insert_has_sequence and \
+            self._select_lastrowid = not self.compiled.inline and \
+                insert_has_sequence and \
                 not self.compiled.returning and \
                 not self._enable_identity_insert and \
                 not self.executemany
@@ -1684,6 +1685,10 @@ class MSDialect(default.DefaultDialect):
         cursor.close()
 
     def get_isolation_level(self, connection):
+        if self.server_version_info < MS_2005_VERSION:
+            raise NotImplementedError(
+                "Can't fetch isolation level prior to SQL Server 2005")
+
         cursor = connection.cursor()
         cursor.execute("""
           SELECT CASE transaction_isolation_level

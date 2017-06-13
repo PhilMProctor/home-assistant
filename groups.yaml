@@ -6,7 +6,7 @@
       - group.home_mon
       - group.scenes
       - group.family
-      - group.battery
+      - group.weather_overview
     
   family:
     name: Family
@@ -101,6 +101,7 @@
     name: 'Device Status'
     entities:
       - group.devices
+      - group.battery
 
   automation:
     view: yes
@@ -110,6 +111,7 @@
       - group.heating
       - group.lighting
       - group.scenes
+      - group.heat_settings
 
   triggers:
     view: no
@@ -120,6 +122,10 @@
       - automation.house_heating_on
       - automation.house_heating_off
       - automation.lounge_lights_on_in_the_evening
+      - automation.house_thermostat_on
+      - automation.house_thermostat_off
+
+
 
   heating:
     view: no
@@ -143,4 +149,56 @@
       - scene.in_the_hutch
       - scene.out_of_the_hutch
       - scene.house_heating_on
-      - scene.house_heating_off
+      - scene.heating_override_on
+      - scene.heating_override_off
+
+  weather_overview:
+    view: no
+    name: 'Weather Overview'
+    entities:
+        - sensor.pws_weather_1d_metric
+        - sensor.pws_temp_high_record_c
+        - sensor.pws_temp_high_1d_c
+        - sensor.pws_temp_c
+        - sensor.pws_temp_low_1d_c
+        - sensor.pws_temp_low_record_c
+        - sensor.pws_precip_1d
+        - sensor.pws_precip_1d_mm
+        - sensor.pws_wind_kph
+        - sensor.pws_wind_1d_kph
+        - sensor.pws_alerts
+
+  heat_settings:
+    view: no
+    name: 'Heating Control'
+    entities:
+      - climate.house
+      - input_select.heating_thermostat_state
+      - climate.hutch
+      - input_select.hutch_thermostat_state
+
+  security:
+    view: yes
+    name: 'Security'
+    entities:
+      - camera.camera_1
+
+  weather:
+    view: yes
+    name: 'Weather'
+    entities:
+      - group.weather_4d
+
+  weather_4d:
+    view: no
+    name: '4 Day Forecast'
+    entities:
+        - sensor.pws_weather_1d_metric
+        - sensor.pws_weather_1n_metric
+        - sensor.pws_weather_2d_metric
+        - sensor.pws_weather_2n_metric
+        - sensor.pws_weather_3d_metric
+        - sensor.pws_weather_3n_metric
+        - sensor.pws_weather_4d_metric
+        - sensor.pws_weather_4n_metric
+    

@@ -3,6 +3,7 @@ import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sized
 
+
 PY_35 = sys.version_info >= (3, 5)
 
 
@@ -14,10 +15,9 @@ class AbstractRouter(ABC):
     def post_init(self, app):
         """Post init stage.
 
-        It's not an abstract method for sake of backward compatibility
-        but if router wans to be aware about application it should
-        override it.
-
+        Not an abstract method for sake of backward compatibility,
+        but if the router wants to be aware of the application
+        it can override this.
         """
 
     @property
@@ -129,3 +129,20 @@ class AbstractCookieJar(Sized, Iterable):
     @abstractmethod
     def filter_cookies(self, request_url):
         """Return the jar's cookies filtered by their attributes."""
+
+
+class AbstractPayloadWriter(ABC):
+
+    @abstractmethod
+    def write(self, chunk):
+        """Write chunk into stream"""
+
+    @asyncio.coroutine
+    @abstractmethod
+    def write_eof(self, chunk=b''):
+        """Write last chunk"""
+
+    @asyncio.coroutine
+    @abstractmethod
+    def drain(self):
+        """Flush the write buffer."""

@@ -3,29 +3,33 @@ from string import ascii_letters, ascii_lowercase, digits
 BASCII_LOWERCASE = ascii_lowercase.encode('ascii')
 BPCT_ALLOWED = {'%{:02X}'.format(i).encode('ascii') for i in range(256)}
 GEN_DELIMS = ":/?#[]@"
-SUB_DELIMS_WITHOUT_QS = "!$'()*,;"
-SUB_DELIMS = SUB_DELIMS_WITHOUT_QS + '+&='
+SUB_DELIMS_WITHOUT_QS = "!$'()*,"
+SUB_DELIMS = SUB_DELIMS_WITHOUT_QS + '+&=;'
 RESERVED = GEN_DELIMS + SUB_DELIMS
 UNRESERVED = ascii_letters + digits + '-._~'
 ALLOWED = UNRESERVED + SUB_DELIMS_WITHOUT_QS
 
 
-def _py_quote(val, *, safe='', protected='', qs=False):
+def _py_quote(val, *, safe='', protected='', qs=False, strict=True):
     if val is None:
         return None
     if not isinstance(val, str):
         raise TypeError("Argument should be str")
     if not val:
         return ''
-    val = val.encode('utf8')
+    val = val.encode('utf8', errors='strict' if strict else 'ignore')
     ret = bytearray()
     pct = b''
     safe += ALLOWED
     if not qs:
-        safe += '+&='
+        safe += '+&=;'
     safe += protected
     bsafe = safe.encode('ascii')
-    for ch in val:
+    idx = 0
+    while idx < len(val):
+        ch = val[idx]
+        idx += 1
+
         if pct:
             if ch in BASCII_LOWERCASE:
                 ch = ch - 32
@@ -35,7 +39,14 @@ def _py_quote(val, *, safe='', protected='', qs=False):
                 try:
                     unquoted = chr(int(pct[1:].decode('ascii'), base=16))
                 except ValueError:
-                    raise ValueError("Unallowed PCT {}".format(pct))
+                    if strict:
+                        raise ValueError("Unallowed PCT %{}".format(pct))
+                    else:
+                        ret.extend(b'%25')
+                        pct = b''
+                        idx -= 2
+                        continue
+
                 if unquoted in protected:
                     ret.extend(pct)
                 elif unquoted in safe:
@@ -43,10 +54,29 @@ def _py_quote(val, *, safe='', protected='', qs=False):
                 else:
                     ret.extend(pct)
                 pct = b''
+
+            # special case, if we have only one char after "%"
+            elif len(pct) == 2 and idx == len(val):
+                if strict:
+                    raise ValueError("Unallowed PCT %{}".format(pct))
+                else:
+                    ret.extend(b'%25')
+                    pct = b''
+                    idx -= 1
+
             continue
+
         elif ch == ord('%'):
             pct = bytearray()
             pct.append(ch)
+
+            # special case if "%" is last char
+            if idx == len(val):
+                if strict:
+                    raise ValueError("Unallowed PCT %")
+                else:
+                    ret.extend(b'%25')
+
             continue
 
         if qs:
@@ -87,7 +117,7 @@ def _py_unquote(val, *, unsafe='', qs=False):
             except UnicodeDecodeError:
                 pass
             else:
-                if qs and unquoted in '+=&':
+                if qs and unquoted in '+=&;':
                     ret.append(_py_quote(unquoted, qs=True))
                 elif unquoted in unsafe:
                     ret.append(_py_quote(unquoted))
@@ -104,7 +134,7 @@ def _py_unquote(val, *, unsafe='', qs=False):
             last_pct = ''
 
         if ch == '+':
-            if ch in unsafe:
+            if not qs or ch in unsafe:
                 ret.append('+')
             else:
                 ret.append(' ')
@@ -125,7 +155,7 @@ def _py_unquote(val, *, unsafe='', qs=False):
         except UnicodeDecodeError:
             ret.append(last_pct)  # %F8
         else:
-            if qs and unquoted in '+=&':
+            if qs and unquoted in '+=&;':
                 ret.append(_py_quote(unquoted, qs=True))
             elif unquoted in unsafe:
                 ret.append(_py_quote(unquoted))

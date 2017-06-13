@@ -5,9 +5,9 @@ import contextlib
 import functools
 import gc
 import socket
-import sys
 import unittest
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from unittest import mock
 
 from multidict import CIMultiDict
@@ -17,12 +17,10 @@ import aiohttp
 from aiohttp.client import _RequestContextManager
 
 from . import ClientSession, hdrs
-from .helpers import sentinel
-from .protocol import HttpVersion, RawRequestMessage
+from .helpers import PY_35, noop, sentinel
+from .http import HttpVersion, RawRequestMessage
 from .signals import Signal
 from .web import Application, Request, Server, UrlMappingMatchInfo
-
-PY_35 = sys.version_info >= (3, 5)
 
 
 def run_briefly(loop):
@@ -41,7 +39,9 @@ def unused_port():
 
 
 class BaseTestServer(ABC):
-    def __init__(self, *, scheme=sentinel, host='127.0.0.1'):
+    def __init__(self, *, scheme=sentinel, loop=None,
+                 host='127.0.0.1', skip_url_asserts=False, **kwargs):
+        self._loop = loop
         self.port = None
         self.server = None
         self.handler = None
@@ -49,12 +49,16 @@ class BaseTestServer(ABC):
         self.host = host
         self._closed = False
         self.scheme = scheme
+        self.skip_url_asserts = skip_url_asserts
 
     @asyncio.coroutine
-    def start_server(self, **kwargs):
+    def start_server(self, loop=None, **kwargs):
         if self.server:
             return
-        self.port = unused_port()
+        self._loop = loop
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.bind((self.host, 0))
+        self.port = self._socket.getsockname()[1]
         self._ssl = kwargs.pop('ssl', None)
         if self.scheme is sentinel:
             if self._ssl:
@@ -67,10 +71,8 @@ class BaseTestServer(ABC):
                                              self.port))
 
         handler = yield from self._make_factory(**kwargs)
-        self.server = yield from self._loop.create_server(handler,
-                                                          self.host,
-                                                          self.port,
-                                                          ssl=self._ssl)
+        self.server = yield from self._loop.create_server(
+            handler, ssl=self._ssl, sock=self._socket)
 
     @abstractmethod  # pragma: no cover
     @asyncio.coroutine
@@ -79,8 +81,11 @@ class BaseTestServer(ABC):
 
     def make_url(self, path):
         url = URL(path)
-        assert not url.is_absolute()
-        return self._root.join(url)
+        if not self.skip_url_asserts:
+            assert not url.is_absolute()
+            return self._root.join(url)
+        else:
+            return URL(str(self._root) + path)
 
     @property
     def started(self):
@@ -117,7 +122,7 @@ class BaseTestServer(ABC):
         pass  # pragma: no cover
 
     def __enter__(self):
-        self._loop.run_until_complete(self.start_server())
+        self._loop.run_until_complete(self.start_server(loop=self._loop))
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -126,7 +131,7 @@ class BaseTestServer(ABC):
     if PY_35:
         @asyncio.coroutine
         def __aenter__(self):
-            yield from self.start_server()
+            yield from self.start_server(loop=self._loop)
             return self
 
         @asyncio.coroutine
@@ -135,15 +140,16 @@ class BaseTestServer(ABC):
 
 
 class TestServer(BaseTestServer):
-    def __init__(self, app, *, scheme=sentinel, host='127.0.0.1'):
+
+    def __init__(self, app, *,
+                 scheme=sentinel, host='127.0.0.1', **kwargs):
         self.app = app
-        self._loop = app.loop
-        super().__init__(scheme=scheme, host=host)
+        super().__init__(scheme=scheme, host=host, **kwargs)
 
     @asyncio.coroutine
     def _make_factory(self, **kwargs):
+        self.handler = self.app.make_handler(loop=self._loop, **kwargs)
         yield from self.app.startup()
-        self.handler = self.app.make_handler(**kwargs)
         return self.handler
 
     @asyncio.coroutine
@@ -154,17 +160,16 @@ class TestServer(BaseTestServer):
 
 
 class RawTestServer(BaseTestServer):
-    def __init__(self, handler,
-                 *, loop=None, scheme=sentinel, host='127.0.0.1'):
-        if loop is None:
-            loop = asyncio.get_event_loop()
-        self._loop = loop
+
+    def __init__(self, handler, *,
+                 scheme=sentinel, host='127.0.0.1', **kwargs):
         self._handler = handler
-        super().__init__(scheme=scheme, host=host)
+        super().__init__(scheme=scheme, host=host, **kwargs)
 
     @asyncio.coroutine
-    def _make_factory(self, **kwargs):
-        self.handler = Server(self._handler, loop=self._loop, **kwargs)
+    def _make_factory(self, debug=True, **kwargs):
+        self.handler = Server(
+            self._handler, loop=self._loop, debug=True, **kwargs)
         return self.handler
 
     @asyncio.coroutine
@@ -174,22 +179,14 @@ class RawTestServer(BaseTestServer):
 
 class TestClient:
     """
-    A test client implementation, for a aiohttp.web.Application.
+    A test client implementation.
 
-    :param app: the aiohttp.web application passed to create_test_server
+    To write functional tests for aiohttp based servers.
 
-    :type app: aiohttp.web.Application
-
-    :param protocol: http or https
-
-    :type protocol: str
-
-    TestClient can also be used as a contextmanager, returning
-    the instance of itself instantiated.
     """
 
     def __init__(self, app_or_server, *, scheme=sentinel, host=sentinel,
-                 cookie_jar=None, **kwargs):
+                 cookie_jar=None, server_kwargs=None, loop=None, **kwargs):
         if isinstance(app_or_server, BaseTestServer):
             if scheme is not sentinel or host is not sentinel:
                 raise ValueError("scheme and host are mutable exclusive "
@@ -198,16 +195,17 @@ class TestClient:
         elif isinstance(app_or_server, Application):
             scheme = "http" if scheme is sentinel else scheme
             host = '127.0.0.1' if host is sentinel else host
-            self._server = TestServer(app_or_server,
-                                      scheme=scheme, host=host)
+            server_kwargs = server_kwargs or {}
+            self._server = TestServer(
+                app_or_server,
+                scheme=scheme, host=host, **server_kwargs)
         else:
             raise TypeError("app_or_server should be either web.Application "
                             "or TestServer instance")
-        self._loop = self._server._loop
+        self._loop = loop
         if cookie_jar is None:
-            cookie_jar = aiohttp.CookieJar(unsafe=True,
-                                           loop=self._loop)
-        self._session = ClientSession(loop=self._loop,
+            cookie_jar = aiohttp.CookieJar(unsafe=True, loop=loop)
+        self._session = ClientSession(loop=loop,
                                       cookie_jar=cookie_jar,
                                       **kwargs)
         self._closed = False
@@ -216,7 +214,7 @@ class TestClient:
 
     @asyncio.coroutine
     def start_server(self):
-        yield from self._server.start_server()
+        yield from self._server.start_server(loop=self._loop)
 
     @property
     def host(self):
@@ -332,7 +330,7 @@ class TestClient:
                 resp.close()
             for ws in self._websockets:
                 yield from ws.close()
-            yield from self._session.close()
+            self._session.close()
             yield from self._server.close()
             self._closed = True
 
@@ -364,35 +362,49 @@ class AioHTTPTestCase(unittest.TestCase):
     * self.loop (asyncio.BaseEventLoop): the event loop in which the
         application and server are running.
     * self.app (aiohttp.web.Application): the application returned by
-        self.get_app()
+        self.get_application()
 
     Note that the TestClient's methods are asynchronous: you have to
     execute function on the test client using asynchronous methods.
     """
 
-    def get_app(self, loop):
+    @asyncio.coroutine
+    def get_application(self):
         """
         This method should be overridden
         to return the aiohttp.web.Application
         object to test.
 
-        :param loop: the event_loop to use
-        :type loop: asyncio.BaseEventLoop
+        """
+        return self.get_app()
+
+    def get_app(self):
+        """Obsolete method used to constructing web application.
+
+        Use .get_application() coroutine instead
+
         """
         pass  # pragma: no cover
 
     def setUp(self):
         self.loop = setup_test_loop()
-        self.app = self.get_app(self.loop)
-        self.client = TestClient(self.app)
+
+        self.app = self.loop.run_until_complete(self.get_application())
+        self.client = self.loop.run_until_complete(self._get_client(self.app))
+
         self.loop.run_until_complete(self.client.start_server())
 
     def tearDown(self):
         self.loop.run_until_complete(self.client.close())
         teardown_test_loop(self.loop)
 
+    @asyncio.coroutine
+    def _get_client(self, app):
+        """Return a TestClient instance."""
+        return TestClient(self.app, loop=self.loop)
 
-def unittest_run_loop(func):
+
+def unittest_run_loop(func, *args, **kwargs):
     """A decorator dedicated to use with asynchronous methods of an
     AioHTTPTestCase.
 
@@ -400,22 +412,22 @@ def unittest_run_loop(func):
     the self.loop of the AioHTTPTestCase.
     """
 
-    @functools.wraps(func)
+    @functools.wraps(func, *args, **kwargs)
     def new_func(self):
-        return self.loop.run_until_complete(func(self))
+        return self.loop.run_until_complete(func(self, *args, **kwargs))
 
     return new_func
 
 
 @contextlib.contextmanager
-def loop_context(loop_factory=asyncio.new_event_loop):
+def loop_context(loop_factory=asyncio.new_event_loop, fast=False):
     """A contextmanager that creates an event_loop, for test purposes.
 
     Handles the creation and cleanup of a test loop.
     """
     loop = setup_test_loop(loop_factory)
     yield loop
-    teardown_test_loop(loop)
+    teardown_test_loop(loop, fast=fast)
 
 
 def setup_test_loop(loop_factory=asyncio.new_event_loop):
@@ -430,19 +442,20 @@ def setup_test_loop(loop_factory=asyncio.new_event_loop):
     return loop
 
 
-def teardown_test_loop(loop):
+def teardown_test_loop(loop, fast=False):
     """Teardown and cleanup an event_loop created
     by setup_test_loop.
 
-    :param loop: the loop to teardown
-    :type loop: asyncio.BaseEventLoop
     """
     closed = loop.is_closed()
     if not closed:
         loop.call_soon(loop.stop)
         loop.run_forever()
         loop.close()
-    gc.collect()
+
+    if not fast:
+        gc.collect()
+
     asyncio.set_event_loop(None)
 
 
@@ -469,12 +482,14 @@ def _create_transport(sslcontext=None):
 def make_mocked_request(method, path, headers=None, *,
                         version=HttpVersion(1, 1), closing=False,
                         app=None,
-                        reader=sentinel,
                         writer=sentinel,
+                        payload_writer=sentinel,
+                        protocol=sentinel,
                         transport=sentinel,
                         payload=sentinel,
                         sslcontext=None,
-                        secure_proxy_ssl_header=None):
+                        secure_proxy_ssl_header=None,
+                        client_max_size=1024**2):
     """Creates mocked web.Request testing purposes.
 
     Useful in unit tests, when spinning full web server is overkill or
@@ -482,30 +497,46 @@ def make_mocked_request(method, path, headers=None, *,
 
     """
 
+    task = mock.Mock()
+    loop = mock.Mock()
+    loop.create_future.return_value = ()
+
     if version < HttpVersion(1, 1):
         closing = True
 
     if headers:
-        hdrs = CIMultiDict(headers)
-        raw_hdrs = [
-            (k.encode('utf-8'), v.encode('utf-8')) for k, v in headers.items()]
+        headers = CIMultiDict(headers)
+        raw_hdrs = tuple(
+            (k.encode('utf-8'), v.encode('utf-8')) for k, v in headers.items())
     else:
-        hdrs = CIMultiDict()
-        raw_hdrs = []
+        headers = CIMultiDict()
+        raw_hdrs = ()
 
-    message = RawRequestMessage(method, path, version, hdrs,
-                                raw_hdrs, closing, False)
+    chunked = 'chunked' in headers.get(hdrs.TRANSFER_ENCODING, '').lower()
+
+    message = RawRequestMessage(
+        method, path, version, headers,
+        raw_hdrs, closing, False, False, chunked, URL(path))
     if app is None:
         app = _create_app_mock()
 
-    if reader is sentinel:
-        reader = mock.Mock()
-
-    if writer is sentinel:
-        writer = mock.Mock()
+    if protocol is sentinel:
+        protocol = mock.Mock()
 
     if transport is sentinel:
         transport = _create_transport(sslcontext)
+
+    if writer is sentinel:
+        writer = mock.Mock()
+        writer.transport = transport
+
+    if payload_writer is sentinel:
+        payload_writer = mock.Mock()
+        payload_writer.write_eof.side_effect = noop
+        payload_writer.drain.side_effect = noop
+
+    protocol.transport = transport
+    protocol.writer = writer
 
     if payload is sentinel:
         payload = mock.Mock()
@@ -514,12 +545,17 @@ def make_mocked_request(method, path, headers=None, *,
     time_service.time.return_value = 12345
     time_service.strtime.return_value = "Tue, 15 Nov 1994 08:12:31 GMT"
 
-    task = mock.Mock()
+    @contextmanager
+    def timeout(*args, **kw):
+        yield
+
+    time_service.timeout = mock.Mock()
+    time_service.timeout.side_effect = timeout
 
     req = Request(message, payload,
-                  transport, reader, writer,
-                  time_service, task,
-                  secure_proxy_ssl_header=secure_proxy_ssl_header)
+                  protocol, payload_writer, time_service, task,
+                  secure_proxy_ssl_header=secure_proxy_ssl_header,
+                  client_max_size=client_max_size)
 
     match_info = UrlMappingMatchInfo({}, mock.Mock())
     match_info.add_app(app)

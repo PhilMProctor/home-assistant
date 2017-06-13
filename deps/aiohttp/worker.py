@@ -1,7 +1,6 @@
 """Async gunicorn worker for aiohttp.web"""
 
 import asyncio
-import logging
 import os
 import re
 import signal
@@ -9,14 +8,15 @@ import socket
 import ssl
 import sys
 
-import gunicorn.workers.base as base
 from gunicorn.config import AccessLogFormat as GunicornAccessLogFormat
+from gunicorn.workers import base
 
-from aiohttp.helpers import AccessLogger, ensure_future
-from aiohttp.web_server import Server
-from aiohttp.wsgi import WSGIServerHttpProtocol
+from .helpers import AccessLogger, create_future, ensure_future
 
-__all__ = ('GunicornWebWorker', 'GunicornUVLoopWebWorker')
+
+__all__ = ('GunicornWebWorker',
+           'GunicornUVLoopWebWorker',
+           'GunicornTokioWebWorker')
 
 
 class GunicornWebWorker(base.Worker):
@@ -54,15 +54,19 @@ class GunicornWebWorker(base.Worker):
 
     def make_handler(self, app):
         if hasattr(self.wsgi, 'make_handler'):
+            access_log = self.log.access_log if self.cfg.accesslog else None
             return app.make_handler(
+                loop=self.loop,
                 logger=self.log,
                 slow_request_timeout=self.cfg.timeout,
                 keepalive_timeout=self.cfg.keepalive,
-                access_log=self.log.access_log,
+                access_log=access_log,
                 access_log_format=self._get_valid_log_format(
                     self.cfg.access_log_format))
         else:
-            return WSGIServer(self.wsgi, self)
+            raise RuntimeError(
+                "aiohttp.wsgi is not supported anymore, "
+                "consider to switch to aiohttp.web.Application")
 
     @asyncio.coroutine
     def close(self):
@@ -134,7 +138,7 @@ class GunicornWebWorker(base.Worker):
     def _wait_next_notify(self):
         self._notify_waiter_done()
 
-        self._notify_waiter = waiter = asyncio.Future(loop=self.loop)
+        self._notify_waiter = waiter = create_future(self.loop)
         self.loop.call_later(1.0, self._notify_waiter_done)
 
         return waiter
@@ -220,26 +224,6 @@ class GunicornWebWorker(base.Worker):
             return source_format
 
 
-class WSGIServer(Server):
-
-    def __init__(self, app, worker):
-        super().__init__(app, loop=worker.loop)
-
-        self.worker = worker
-        self.access_log_format = worker._get_valid_log_format(
-            worker.cfg.access_log_format)
-
-    def __call__(self):
-        return WSGIServerHttpProtocol(
-            self.handler, readpayload=True,
-            loop=self._loop,
-            logger=self.worker.log,
-            debug=self.worker.log.loglevel == logging.DEBUG,
-            keep_alive=self.worker.cfg.keepalive,
-            access_log=self.worker.log.access_log,
-            access_log_format=self.access_log_format)
-
-
 class GunicornUVLoopWebWorker(GunicornWebWorker):
 
     def init_process(self):
@@ -253,5 +237,22 @@ class GunicornUVLoopWebWorker(GunicornWebWorker):
         # asyncio.get_event_loop() will create an instance
         # of uvloop event loop.
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
+        super().init_process()
+
+
+class GunicornTokioWebWorker(GunicornWebWorker):
+
+    def init_process(self):
+        import tokio
+
+        # Close any existing event loop before setting a
+        # new policy.
+        asyncio.get_event_loop().close()
+
+        # Setup tokio policy, so that every
+        # asyncio.get_event_loop() will create an instance
+        # of tokio event loop.
+        asyncio.set_event_loop_policy(tokio.EventLoopPolicy())
 
         super().init_process()
