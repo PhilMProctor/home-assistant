@@ -34,9 +34,9 @@ b0e89202ccce:
 94d85915ae3d:
   hide_if_away: false
   mac: 94:D8:59:15:AE:3D
-  name: 'Sandras Phone'
+  name: 'Sandras Old Phone'
   picture:
-  track: true
+  track: false
   vendor: TCT mobile ltd
 
 bcf2afd4cc3b:
@@ -362,7 +362,7 @@ ccc3eabac01c:
 f0d7aa301053:
   hide_if_away: false
   mac: F0:D7:AA:30:10:53
-  name: f0d7aa301053
+  name: 'Sandras Phone'
   picture:
   track: true
   vendor: Motorola Mobility LLC, a Lenovo Company

@@ -1,5 +1,7 @@
 secrets.yaml
-*.db
+*v2.db*
 .google.token
 home-assistant.log
+*.pyc
+/deps/*
 

@@ -1,0 +1,5 @@
+  - platform: command_line
+    switches:
+      notebook:
+        command_on: "echo hello"
+        command_off: "echo bye"

@@ -38,7 +38,11 @@ logbook:
 
 # Database housekeeping
 recorder:
-  purge_days: 8
+  purge_days: 7
+  exclude:
+    entities:
+    - sun.sun
+
 
 # Track the sun
 sun:
@@ -56,6 +60,8 @@ switch: !include_dir_merge_list devices/switches
 automation: !include automations.yaml
 scene: !include scenes.yaml
 #binary_sensor: !include binary_sensor.yaml
+input_boolean: !include input_boolean.yaml
+input_slider: !include input_slider.yaml
 
 zone:
   name: Home
@@ -97,57 +103,6 @@ notify:
     platform: pushbullet
     api_key: !secret pb_api
 
-input_slider:
-  house_heat_on_hr:
-    name: 'Heat On Hour'
-    min: 00
-    max: 23
-    initial: 06
-    step: 1
-    icon: mdi:clock
-    unit_of_measurement: 'Hours'
-
-  house_heat_on_min:
-    name: 'Heat On Min'
-    min: 00
-    max: 45
-    initial: 00
-    step: 15
-    icon: mdi:clock
-    unit_of_measurement: 'Min'
-
-  house_heat_off_hr:
-    name: 'Heat Off Hour'
-    min: 00
-    max: 23
-    initial: 06
-    step: 1
-    icon: mdi:clock
-    unit_of_measurement: 'Hours'
-
-  house_heat_off_min:
-    name: 'Heat Off Min'
-    min: 00
-    max: 45
-    initial: 00
-    step: 15
-    icon: mdi:clock
-    unit_of_measurement: 'Min'
-
-input_select:
-  heating_thermostat_state:
-    name: 'House Thermostat Away Mode'
-    options:
-      - 'On'
-      - 'Off'
-    icon: mdi:target
-  hutch_thermostat_state:
-    name: 'Hutch Thermostat Away Mode'
-    options:
-      - 'On'
-      - 'Off'
-    icon: mdi:target
-
 device_tracker:
   - platform: owntracks
   - platform: nmap_tracker
@@ -165,16 +120,14 @@ google:
   client_id: !secret g_client_id
   client_secret: !secret g_client_secret
 
+ifttt:
+  key: !secret ifttt_key
+
 script:
   example_script:
     sequence:
       - service: device_tracker.see
         entity_id: device_tracker.18fe34dabbd5
-
-#media_player:
-# - platform: kodi
-#    name: Hutch kodi
-#    host: 10.44.3.223
 
 climate:
   - platform: generic_thermostat
@@ -204,13 +157,43 @@ climate:
       minutes: 3
 
 android_ip_webcam:
-  - host: 10.44.3.225:8081
-    scan_interval: 120
-    name: 'Camera 1'
-    username: 'admin'
+  - host: 10.44.3.214
+    port: 2271
+    scan_interval: 1
+    name: 'Lounge'
+    username: 'centrum'
     password: !secret camera_pw
     switches:
+      - exposure_lock
+      - ffc
       - focus
+      - gps_active
+      - night_vision
+      - overlay
+      - torch
+      - whitebalance_lock
+      - video_recording
     sensors:
       - battery_level
-    motion_sensor: true
+      - motion
+      - light
+  - host: 10.44.3.223
+    port: 2271
+    scan_interval: 1
+    name: 'Hall'
+    username: 'centrum'
+    password: !secret camera_pw
+    switches:
+      - exposure_lock
+      - ffc
+      - focus
+      - gps_active
+      - night_vision
+      - overlay
+      - torch
+      - whitebalance_lock
+      - video_recording
+    sensors:
+      - battery_level
+      - motion
+      - light

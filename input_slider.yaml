@@ -1,0 +1,79 @@
+alarmhour:
+  name: Hour
+  icon: mdi:timer
+  initial: 9
+  min: 0
+  max: 23
+  step: 1
+
+alarmminutes:
+  name: Minutes
+  icon: mdi:timer
+  initial: 0
+  min: 0
+  max: 59
+  step: 5
+
+heat_on_hour:
+  name: Hour
+  icon: mdi:timer
+  initial: 9
+  min: 0
+  max: 23
+  step: 1
+  
+heat_on_minutes:
+  name: Minutes
+  icon: mdi:timer
+  initial: 0
+  min: 0
+  max: 59
+  step: 5
+
+heat_off_hour:
+  name: Hour
+  icon: mdi:timer
+  initial: 9
+  min: 0
+  max: 23
+  step: 1
+  
+heat_off_minutes:
+  name: Minutes
+  icon: mdi:timer
+  initial: 0
+  min: 0
+  max: 59
+  step: 5
+
+hutch_on_hour:
+  name: Hour
+  icon: mdi:timer
+  initial: 9
+  min: 0
+  max: 23
+  step: 1
+  
+hutch_on_minutes:
+  name: Minutes
+  icon: mdi:timer
+  initial: 0
+  min: 0
+  max: 59
+  step: 5
+
+hutch_off_hour:
+  name: Hour
+  icon: mdi:timer
+  initial: 9
+  min: 0
+  max: 23
+  step: 1
+  
+hutch_off_minutes:
+  name: Minutes
+  icon: mdi:timer
+  initial: 0
+  min: 0
+  max: 59
+  step: 5

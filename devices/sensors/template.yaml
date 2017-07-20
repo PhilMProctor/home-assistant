@@ -1,0 +1,33 @@
+- platform: template
+  sensors:
+    alarm_time:
+      friendly_name: 'Time'
+      value_template: '{{ "%0.02d:%0.02d" | format(states("input_slider.alarmhour") | int, states("input_slider.alarmminutes") | int) }}'
+#
+# House Heating
+#
+- platform: template
+  sensors:
+    heat_on_time:
+      friendly_name: 'Heating On'
+      value_template: '{{ "%0.02d:%0.02d" | format(states("input_slider.heat_on_hour") | int, states("input_slider.heat_on_minutes") | int) }}'
+
+- platform: template
+  sensors:
+    heat_off_time:
+      friendly_name: 'Heating Off'
+      value_template: '{{ "%0.02d:%0.02d" | format(states("input_slider.heat_off_hour") | int, states("input_slider.heat_off_minutes") | int) }}'
+#
+# Hutch Heating
+#
+- platform: template
+  sensors:
+    hutch_on_time:
+      friendly_name: 'Heating On'
+      value_template: '{{ "%0.02d:%0.02d" | format(states("input_slider.hutch_on_hour") | int, states("input_slider.hutch_on_minutes") | int) }}'
+
+- platform: template
+  sensors:
+    hutch_off_time:
+      friendly_name: 'Heating Off'
+      value_template: '{{ "%0.02d:%0.02d" | format(states("input_slider.hutch_off_hour") | int, states("input_slider.hutch_off_minutes") | int) }}'
