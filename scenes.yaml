@@ -22,3 +22,17 @@
         state: off
       switch.hutch_heater:
         state: off
+
+  - name: 'Security On'
+    entities:
+      switch.hall_frontfacing_camera:
+        state: off
+      switch.lounge_frontfacing_camera:
+        state: off
+
+  - name: 'Security Off'
+    entities:
+      switch.hall_frontfacing_camera:
+        state: on
+      switch.lounge_frontfacing_camera:
+        state: on

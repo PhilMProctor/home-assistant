@@ -108,7 +108,6 @@
     view: yes
     name: 'Automation'
     entities:
-      - group.triggers
       - group.heating
       - group.lighting
       - group.scenes
@@ -141,6 +140,7 @@
     entities:
       - switch.lounge_lights
       - switch.garage_light
+      - switch.hutch_light
 
   scenes:
     view: no
@@ -193,6 +193,7 @@
       - sensor.lounge_light_level
       - switch.lounge_torch
       - switch.lounge_video_recording
+      - switch.lounge_frontfacing_camera
 
   cam2_sensors:
     view: no
@@ -202,6 +203,7 @@
       - sensor.hall_light_level
       - switch.hall_torch
       - switch.hall_video_recording
+      - switch.hall_frontfacing_camera
 
   weather:
     view: yes
@@ -254,3 +256,9 @@
       - input_slider.hutch_off_hour
       - input_slider.hutch_off_minutes
       - input_boolean.hutch_weekday
+
+  debug:
+    name: 'Debug'
+    view: yes
+    entities:
+      - group.triggers

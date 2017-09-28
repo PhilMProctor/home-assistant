@@ -24,7 +24,7 @@
   alias: Random - Lounge Lights Off
   trigger:
   - platform: time
-    after: '23:00:00'
+    at: '23:00:00'
   condition:
   - condition: state
     entity_id: group.family
@@ -37,7 +37,7 @@
   alias: Reset lights automation
   trigger:
     platform: time
-    after: 07:15:00
+    at: 07:15:00
   action:
     service: automation.turn_on
     entity_id: automation.lounge_lights_on_in_the_evening

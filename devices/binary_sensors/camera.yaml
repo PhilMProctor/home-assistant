@@ -1,10 +1,10 @@
-  - platform: rest
-    name: 'Camera1 Motion'
-      sensor_class: motion
-      resource: http://camera1:8081/sensors.json?sense=motion_active
-      value_template: '{{ value_json.motion_active.data[0][1][0] | round(0) }}'
-    name: 'Camera2 Motion'
-      sensor_class: motion
-      resource: http://camera2:8082/sensors.json?sense=motion_active
-      value_template: '{{ value_json.motion_active.data[0][1][0] | round(0) }}'
+#  - platform: rest
+#    name: 'Camera1 Motion'
+#      sensor_class: motion
+#      resource: http://camera1:8081/sensors.json?sense=motion_active
+#      value_template: '{{ value_json.motion_active.data[0][1][0] | round(0) }}'
+#    name: 'Camera2 Motion'
+#      sensor_class: motion
+#      resource: http://camera2:8082/sensors.json?sense=motion_active
+#      value_template: '{{ value_json.motion_active.data[0][1][0] | round(0) }}'
 

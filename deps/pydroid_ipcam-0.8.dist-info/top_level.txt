@@ -1,1 +1,0 @@
-pydroid_ipcam

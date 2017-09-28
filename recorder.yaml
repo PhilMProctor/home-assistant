@@ -1,0 +1,19 @@
+purge_days: 3
+  exclude:
+    domains:
+    - sun
+  entities:
+    - sensors.glances.disk_use_percent
+    - sensors.glances.disk_use
+    - sensors.glances.disk_free
+    - sensors.glances.memory_use_percent
+    - sensors.glances.memory_use
+    - sensors.glances.memory_free
+    - sensors.glances.swap_use_percent
+    - sensors.glances.swap_use
+    - sensors.glances.swap_free
+    - sensors.glances.processor_load
+    - sensors.glances.process_running
+    - sensors.glances.process_total
+    - sensors.glances.process_thread
+    - sensors.glances.process_sleeping

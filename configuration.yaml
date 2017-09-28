@@ -5,7 +5,7 @@ homeassistant:
   elevation: 20
   unit_system: metric
   time_zone: Europe/London
-  customize: !include customize.yaml
+  customize: !include int_customize.yaml
 
 frontend:
 logger:
@@ -37,11 +37,7 @@ history:
 logbook:
 
 # Database housekeeping
-recorder:
-  purge_days: 7
-  exclude:
-    entities:
-    - sun.sun
+recorder: !include recorder.yaml
 
 
 # Track the sun
@@ -157,11 +153,11 @@ climate:
       minutes: 3
 
 android_ip_webcam:
-  - host: 10.44.3.214
+  - host: 10.44.3.120
     port: 2271
     scan_interval: 1
     name: 'Lounge'
-    username: 'centrum'
+    username: 'hass227'
     password: !secret camera_pw
     switches:
       - exposure_lock
@@ -177,11 +173,11 @@ android_ip_webcam:
       - battery_level
       - motion
       - light
-  - host: 10.44.3.223
+  - host: 10.44.3.119
     port: 2271
     scan_interval: 1
     name: 'Hall'
-    username: 'centrum'
+    username: 'hass227'
     password: !secret camera_pw
     switches:
       - exposure_lock

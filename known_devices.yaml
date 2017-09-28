@@ -366,3 +366,39 @@ f0d7aa301053:
   picture:
   track: true
   vendor: Motorola Mobility LLC, a Lenovo Company
+
+fc51a4a2009d:
+  hide_if_away: false
+  icon:
+  mac: FC:51:A4:A2:00:9D
+  name: fc51a4a2009d
+  picture:
+  track: true
+  vendor: ARRIS Group, Inc.
+
+400d10b1dc90:
+  hide_if_away: false
+  icon:
+  mac: 40:0D:10:B1:DC:90
+  name: 400d10b1dc90
+  picture:
+  track: true
+  vendor: unknown
+
+3ca82aa4f629:
+  hide_if_away: false
+  icon:
+  mac: 3C:A8:2A:A4:F6:29
+  name: 3ca82aa4f629
+  picture:
+  track: true
+  vendor: Hewlett Packard
+
+b827eb9f487a:
+  hide_if_away: false
+  icon:
+  mac: B8:27:EB:9F:48:7A
+  name: b827eb9f487a
+  picture:
+  track: true
+  vendor: Raspberry Pi Foundation

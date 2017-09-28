@@ -1,8 +1,0 @@
-  - platform: command_line
-    switches:
-      camera_flash1:
-        command_on: 'curl -s "http://camera1:8081/enabletorch" > /dev/null'
-        command_off: 'curl -s "http://camera1:8081/disabletorch" > /dev/null'
-        command_state: 'curl "http://camera1:8081/status.json"'
-        value_template: '{{ value_json.curvals.torch == "on" }}'
-        friendly_name: 'Camera1 Flash'

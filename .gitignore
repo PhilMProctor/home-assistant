@@ -3,5 +3,6 @@ secrets.yaml
 .google.token
 home-assistant.log
 *.pyc
-/deps/*
+deps/*
+*.bk
 

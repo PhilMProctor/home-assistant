@@ -17,3 +17,13 @@
     optimistic: false
     qos: 0
     retain: true
+
+- platform: mqtt
+    name: "Hutch Light"
+    state_topic: "home/switch/hutch/switch2/set"
+    command_topic: "home/switch/hutch/switch2/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: false
+    qos: 0
+    retain: true
