@@ -7,20 +7,12 @@
 
   - name: 'In the Hutch'
     entities:
-      automation.hutch_heating_on:
-        state: on
-      automation.hutch_heating_off:
-        state: on
-      switch.hutch_heater:
+      switch.hutch_heating:
         state: on
 
   - name: 'Out of the Hutch'
     entities:
-      automation.hutch_heating_on:
-        state: off
-      automation.hutch_heating_off:
-        state: off
-      switch.hutch_heater:
+      switch.hutch_heating:
         state: off
 
   - name: 'Security On'

@@ -69,8 +69,11 @@
   action:
   - service: ifttt.trigger
     data:
-      event: TestHA_Trigger
-      value1: Hello World!
+      event: Alarm_Trigger
+      value1: Morning!
+  - service: switch.turn_on
+    entity_id: switch.master_bedroom_light
+
 
 - id: auto06
   alias: House Heating On
@@ -78,6 +81,9 @@
   - platform: template
     value_template: '{{ states.sensor.time.state == states.sensor.heat_on_time.state
       }}'
+  - platform: state
+    entity_id: switch.house_heating
+    to: 'on'
   condition:
   - condition: or
     conditions:
@@ -108,6 +114,9 @@
   - platform: template
     value_template: '{{ states.sensor.time.state == states.sensor.heat_off_time.state
       }}'
+  - platform: state
+    entity_id: switch.house_heating
+    to: 'off'
   condition:
   - condition: or
     conditions:
@@ -138,6 +147,9 @@
   - platform: template
     value_template: '{{ states.sensor.time.state == states.sensor.hutch_on_time.state
       }}'
+  - platform: state
+    entity_id: switch.hutch_heating
+    to: 'on'
   condition:
   - condition: or
     conditions:
@@ -168,6 +180,9 @@
   - platform: template
     value_template: '{{ states.sensor.time.state == states.sensor.hutch_off_time.state
       }}'
+  - platform: state
+    entity_id: switch.hutch_heating
+    to: 'off'
   condition:
   - condition: or
     conditions:
@@ -191,4 +206,3 @@
       data:
         entity_id: climate.hutch
         temperature: 1
-    

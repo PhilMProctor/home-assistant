@@ -239,14 +239,6 @@ f0a225b6f267:
   track: true
   vendor: Private
 
-owntracks_benjamin_tablet:
-  hide_if_away: false
-  mac:
-  name: owntracks
-  picture:
-  track: true
-  vendor:
-
 admonitrix:
   hide_if_away: false
   mac:
@@ -398,7 +390,16 @@ b827eb9f487a:
   hide_if_away: false
   icon:
   mac: B8:27:EB:9F:48:7A
-  name: b827eb9f487a
+  name: 'Hutch Media Server'
   picture:
   track: true
   vendor: Raspberry Pi Foundation
+
+44334c3b70eb:
+  hide_if_away: false
+  icon:
+  mac: 44:33:4C:3B:70:EB
+  name: 44334c3b70eb
+  picture:
+  track: true
+  vendor: Shenzhen Bilian electronic CO.,LTD

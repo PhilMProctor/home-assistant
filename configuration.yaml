@@ -37,7 +37,11 @@ history:
 logbook:
 
 # Database housekeeping
-recorder: !include recorder.yaml
+recorder:
+  purge_days: 3
+  exclude:
+    domains:
+      - sun
 
 
 # Track the sun
@@ -55,9 +59,10 @@ sensor: !include_dir_merge_list devices/sensors
 switch: !include_dir_merge_list devices/switches
 automation: !include automations.yaml
 scene: !include scenes.yaml
-#binary_sensor: !include binary_sensor.yaml
+binary_sensor: !include binary_sensor.yaml
 input_boolean: !include input_boolean.yaml
 input_slider: !include input_slider.yaml
+alert: !include alert.yaml
 
 zone:
   name: Home
@@ -132,7 +137,7 @@ climate:
     target_sensor: sensor.hallway
     min_temp: 13
     max_temp: 21
-    target_temp: 18.5
+    target_temp: 13
     tolerance: 0.3
     min_cycle_duration:
       seconds: 5
@@ -145,7 +150,7 @@ climate:
     target_sensor: sensor.hutch
     min_temp: 1
     max_temp: 21
-    target_temp: 18.5
+    target_temp: 1
     tolerance: 0.3
     min_cycle_duration:
       seconds: 5

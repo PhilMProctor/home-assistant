@@ -113,6 +113,7 @@
       - group.scenes
       - group.house_heating
       - group.hutch_heating
+      - group.power
 
   triggers:
     view: no
@@ -124,15 +125,12 @@
       - automation.hutch_heating_on
       - automation.hutch_heating_off
 
-
-
   heating:
     view: no
     name: 'Heating'
     entities:
-      - switch.hutch_heater
-      - switch.landing_heater
-      - switch.heating_switch
+      - switch.hutch_heating
+      - switch.house_heating
 
   lighting:
     view: no
@@ -141,6 +139,8 @@
       - switch.lounge_lights
       - switch.garage_light
       - switch.hutch_light
+      - switch.master_bedroom_light
+      - switch.fish_tank_light
 
   scenes:
     view: no
@@ -150,6 +150,8 @@
       - scene.in_the_hutch
       - scene.out_of_the_hutch
       - scene.house_heating_on
+      - scene.security_on
+      - scene.security_off
 
   weather_overview:
     view: no
@@ -262,3 +264,10 @@
     view: yes
     entities:
       - group.triggers
+      - group.heating
+
+  power:
+    name: 'Power'
+    view: no
+    entities:
+      - switch.tv_power
