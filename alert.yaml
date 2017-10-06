@@ -1,0 +1,6 @@
+ hutch_heating_alert:
+  name: 'Hutch Heating Alert'
+  entity_id: binary_sensor.hutch_heating_alert
+  repeat: 30
+  notifiers:
+    - phils_phone
