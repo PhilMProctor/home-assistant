@@ -1,14 +1,19 @@
 alarmweekday:
   name: Weekdays Only
-  initial: off
+  initial: on
   icon: mdi:calendar
 
 house_weekday:
   name: Weekdays Only
-  initial: off
+  initial: on
   icon: mdi:calendar
 
 hutch_weekday:
   name: Weekdays Only
-  initial: off
+  initial: on
+  icon: mdi:calendar
+
+lounge_lights:
+  name: Weekdays Only
+  initial: on
   icon: mdi:calendar

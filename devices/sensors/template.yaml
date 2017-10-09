@@ -31,3 +31,11 @@
     hutch_off_time:
       friendly_name: 'Heating Off'
       value_template: '{{ "%0.02d:%0.02d" | format(states("input_slider.hutch_off_hour") | int, states("input_slider.hutch_off_minutes") | int) }}'
+#
+# Lounge Lights On
+#
+- platform: template
+  sensors:
+    lounge_lights_on_time:
+      friendly_name: 'lounge Lights On Time'
+      value_template: '{{ "%0.02d:%0.02d" | format(states("input_slider.lounge_lights_on_hour") | int, states("input_slider.lounge_lights_on_minutes") | int) }}'

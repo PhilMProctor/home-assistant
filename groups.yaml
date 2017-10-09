@@ -114,6 +114,7 @@
       - group.house_heating
       - group.hutch_heating
       - group.power
+      - group.lounge_lights
 
   triggers:
     view: no
@@ -150,8 +151,8 @@
       - scene.in_the_hutch
       - scene.out_of_the_hutch
       - scene.house_heating_on
-      - scene.security_on
-      - scene.security_off
+      - scene.security_active
+      - scene.security_inactive
 
   weather_overview:
     view: no
@@ -174,9 +175,7 @@
     name: 'Heating Control'
     entities:
       - climate.house
- #     - input_select.heating_thermostat_state
       - climate.hutch
-  #    - input_select.hutch_thermostat_state
 
   security:
     view: yes
@@ -270,4 +269,15 @@
     name: 'Power'
     view: no
     entities:
-      - switch.tv_power
+      - switch.tv
+
+  lounge_lights:
+    name: 'Lounge Lights Control'
+    view: no
+    entities:
+      - automation.morning_lounge_lights_on
+      - sensor.lounge_lights_on_time
+      - input_slider.lounge_lights_on_hour
+      - input_slider.lounge_lights_on_minutes
+      - input_boolean.lounge_lights
+

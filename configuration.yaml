@@ -73,8 +73,8 @@ zone:
 
 zone 2:
   name: UCEA
-  latitude: 53.276379
-  longitude:  -2.907707
+  latitude: 53.277080 
+  longitude: -2.906817
   radius: 100
   icon: mdi:school
 
@@ -98,11 +98,23 @@ zone 5:
   longitude: -3.908915
   radius: 100
   icon: mdi:home
+
+zone 6:
+  name: 'Cambridge Road School'
+  latitude: 53.279321
+  longitude: -2.895744
+  radius: 50
+  icon: mdi:school
   
 notify:
   - name: pushbullet
     platform: pushbullet
     api_key: !secret pb_api
+
+  - name: html5
+    platform: html5
+    gcm_api_key: !secret gcm_sender_key
+    gcm_sender_id: !secret gcm-sender-id
 
 device_tracker:
   - platform: owntracks
@@ -116,10 +128,6 @@ device_tracker:
     count: 3
 
 group: !include groups.yaml
-
-google:
-  client_id: !secret g_client_id
-  client_secret: !secret g_client_secret
 
 ifttt:
   key: !secret ifttt_key

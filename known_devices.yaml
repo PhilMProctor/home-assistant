@@ -403,3 +403,12 @@ b827eb9f487a:
   picture:
   track: true
   vendor: Shenzhen Bilian electronic CO.,LTD
+
+a0f450b44c65:
+  hide_if_away: false
+  icon:
+  mac: A0:F4:50:B4:4C:65
+  name: a0f450b44c65
+  picture:
+  track: true
+  vendor: HTC Corporation

@@ -4,6 +4,8 @@
         state: off
       automation.lounge_lights_on_in_the_evening:
         state: off
+      scene.security_active:
+        state: on
 
   - name: 'In the Hutch'
     entities:
@@ -15,14 +17,14 @@
       switch.hutch_heating:
         state: off
 
-  - name: 'Security On'
+  - name: 'Security Active'
     entities:
       switch.hall_frontfacing_camera:
         state: off
       switch.lounge_frontfacing_camera:
         state: off
 
-  - name: 'Security Off'
+  - name: 'Security Inactive'
     entities:
       switch.hall_frontfacing_camera:
         state: on

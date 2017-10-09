@@ -1,5 +1,5 @@
   - platform: mqtt
-    name: "TV Power"
+    name: "TV"
     state_topic: "home/switch/lounge/switch2/set"
     command_topic: "home/switch/lounge/switch2/set"
     payload_on: "ON"
