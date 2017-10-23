@@ -43,7 +43,7 @@ sensor.sandras_phone:
 sensor.nathans_phone:
   icon: mdi:battery
 
-sensor.benjamins_tablet:
+sensor.benjamins_phone:
   icon: mdi:battery
 
 device_tracker.2c54cfe5cea6:

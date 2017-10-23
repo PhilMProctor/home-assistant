@@ -106,7 +106,7 @@
     - service: climate.set_temperature
       data:
         entity_id: climate.house
-        temperature: 18.5
+        temperature: 18.0
 
 - id: auto07
   alias: House Heating Off

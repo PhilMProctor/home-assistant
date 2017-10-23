@@ -11,10 +11,14 @@
     entities:
       switch.hutch_heating:
         state: on
+      switch.hutch_frontfacing_camera:
+        state: on
 
   - name: 'Out of the Hutch'
     entities:
       switch.hutch_heating:
+        state: off
+      switch.hutch_frontfacing_camera:
         state: off
 
   - name: 'Security Active'
@@ -23,10 +27,14 @@
         state: off
       switch.lounge_frontfacing_camera:
         state: off
+      switch.hutch_frontfacing_camera:
+        state: off
 
   - name: 'Security Inactive'
     entities:
       switch.hall_frontfacing_camera:
         state: on
       switch.lounge_frontfacing_camera:
+        state: on
+      switch.hutch_frontfacing_camera:
         state: on

@@ -206,3 +206,28 @@ android_ip_webcam:
       - battery_level
       - motion
       - light
+
+  - host: 10.44.3.127
+    port: 2271
+    scan_interval: 1
+    name: 'Hutch'
+    username: 'hass227'
+    password: !secret camera_pw
+    switches:
+      - exposure_lock
+      - ffc
+      - focus
+      - gps_active
+      - night_vision
+      - overlay
+      - torch
+      - whitebalance_lock
+      - video_recording
+    sensors:
+      - battery_level
+      - motion
+      - light
+
+apiai:
+intent_script: !include intent_script.yaml
+

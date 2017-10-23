@@ -1,24 +1,24 @@
   - platform: mqtt
-    state_topic: "owntracks/owntracks/sandra-phone"
+    state_topic: "owntracks/SandraPhone/zsandraphone"
     name: "Sandras Phone"
     unit_of_measurement: "%"
     value_template: '{{ value_json.batt }}'
 
   - platform: mqtt
-    state_topic: "owntracks/owntracks/phil-phone"
+    state_topic: "owntracks/PhilPhone/zphilphone"
     name: "Phils Phone"
     unit_of_measurement: "%"
     value_template: '{{ value_json.batt }}'
 
   - platform: mqtt
-    state_topic: "owntracks/owntracks/nathan-phone"
+    state_topic: "owntracks/NathanPhone/znathanphone"
     name: "Nathans Phone"
     unit_of_measurement: "%"
     value_template: '{{ value_json.batt }}'
 
   - platform: mqtt
-    state_topic: "owntracks/owntracks/benjamin_tablet"
-    name: "Benjamins Tablet"
+    state_topic: "owntracks/BenjaminPhone/zbenjaminphone"
+    name: "Benjamins Phone"
     unit_of_measurement: "%"
     value_template: '{{ value_json.batt }}'
 

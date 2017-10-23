@@ -1,0 +1,6 @@
+  Temperature:
+    speech:
+      text: The temperature at home is {{ states('sensor.hallway') }} degrees
+  GetHouseTemp:
+    speech:
+      text: The temperature at home is {{ states('sensor.hallway') }} degrees

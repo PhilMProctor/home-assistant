@@ -14,9 +14,9 @@
     view: no
     icon: mdi:account-multiple
     entities:
-      - device_tracker.owntracks_philphone
-      - device_tracker.owntracks_sandraphone
-      - device_tracker.owntracks_nathanphone
+      - device_tracker.philphone_zphilphone
+      - device_tracker.sandraphone_zsandraphone
+      - device_tracker.nathanphone_znathanphone
 
   battery:
     name: 'Battery State'
@@ -25,7 +25,7 @@
       - sensor.phils_phone
       - sensor.sandras_phone
       - sensor.nathans_phone
-      - sensor.benjamins_tablet
+      - sensor.benjamins_phone
 
   home_mon:
     name: Environment
@@ -183,8 +183,10 @@
     entities:
       - camera.lounge
       - camera.hall
+      - camera.hutch
       - group.cam1_sensors
       - group.cam2_sensors
+      - group.cam3_sensors
 
   cam1_sensors:
     view: no
@@ -194,7 +196,6 @@
       - sensor.lounge_light_level
       - switch.lounge_torch
       - switch.lounge_video_recording
-      - switch.lounge_frontfacing_camera
 
   cam2_sensors:
     view: no
@@ -204,7 +205,15 @@
       - sensor.hall_light_level
       - switch.hall_torch
       - switch.hall_video_recording
-      - switch.hall_frontfacing_camera
+
+  cam3_sensors:
+    view: no
+    name: 'Hutch Camera'
+    entities:
+      - sensor.hutch_motion
+      - sensor.hutch_light_level
+      - switch.hutch_torch
+      - switch.hutch_video_recording
 
   weather:
     view: yes
@@ -280,4 +289,3 @@
       - input_slider.lounge_lights_on_hour
       - input_slider.lounge_lights_on_minutes
       - input_boolean.lounge_lights
-

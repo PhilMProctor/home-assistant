@@ -135,38 +135,6 @@ b827eb5fe5b2:
   track: true
   vendor: Intel Corporate
 
-owntracks_philphone:
-  hide_if_away: false
-  mac:
-  name: Phil
-  picture:
-  track: true
-  vendor:
-
-owntracks_harpian:
-  hide_if_away: false
-  mac:
-  name: owntracks
-  picture:
-  track: false
-  vendor:
-
-owntracks_nathanphone:
-  hide_if_away: false
-  mac:
-  name: Nathan
-  picture:
-  track: true
-  vendor:
-
-owntracks_sandraphone:
-  hide_if_away: false
-  mac:
-  name: Sandra
-  picture:
-  track: true
-  vendor:
-
 a47733c0b8a6:
   hide_if_away: false
   mac: A4:77:33:C0:B8:A6
@@ -182,14 +150,6 @@ f4f524cc78e6:
   picture:
   track: true
   vendor: Motorola Mobility LLC, a Lenovo Company
-
-54ef925dad48:
-  hide_if_away: false
-  mac: 54:EF:92:5D:AD:48
-  name: 'Benjamin Tablet'
-  picture:
-  track: true
-  vendor: Shenzhen Elink Technology Co., LTD
 
 f4f524cc82d3:
   hide_if_away: false
@@ -328,7 +288,7 @@ ccc3eabac01c:
   vendor: Motorola Mobility LLC, a Lenovo Company
 
 1cb094d08781:
-  hide_if_away: false
+  hide_if_away: true
   mac: 1C:B0:94:D0:87:81
   name: 1cb094d08781
   picture:
@@ -381,7 +341,7 @@ fc51a4a2009d:
   hide_if_away: false
   icon:
   mac: 3C:A8:2A:A4:F6:29
-  name: 3ca82aa4f629
+  name: Home Computer
   picture:
   track: true
   vendor: Hewlett Packard
@@ -412,3 +372,93 @@ a0f450b44c65:
   picture:
   track: true
   vendor: HTC Corporation
+
+philphone_zphilphone:
+  hide_if_away: false
+  icon:
+  mac:
+  name: Phil
+  picture:
+  track: true
+  vendor:
+
+nathanphone_znathanphone:
+  hide_if_away: false
+  icon:
+  mac:
+  name: Nathan
+  picture:
+  track: true
+  vendor:
+
+benjaminphone_zbenjaminphone:
+  hide_if_away: false
+  icon:
+  mac:
+  name: Benjamin
+  picture:
+  track: true
+  vendor:
+
+sandraphone_zsandraphone:
+  hide_if_away: false
+  icon:
+  mac:
+  name: Sandra
+  picture:
+  track: true
+  vendor:
+
+e899c476e507:
+  hide_if_away: false
+  icon:
+  mac: E8:99:C4:76:E5:07
+  name: e899c476e507
+  picture:
+  track: true
+  vendor: HTC Corporation
+
+64db439fc952:
+  hide_if_away: false
+  icon:
+  mac: 64:DB:43:9F:C9:52
+  name: 64db439fc952
+  picture:
+  track: true
+  vendor: Motorola (Wuhan) Mobility Technologies Communication Co., Ltd.
+
+owntracks_sandraphone:
+  hide_if_away: true
+  icon:
+  mac:
+  name: owntracks
+  picture:
+  track: true
+  vendor:
+
+owntracks_philphone:
+  hide_if_away: true
+  icon:
+  mac:
+  name: owntracks
+  picture:
+  track: true
+  vendor:
+
+owntracks_nathanphone:
+  hide_if_away: true
+  icon:
+  mac:
+  name: owntracks
+  picture:
+  track: true
+  vendor:
+
+philphone_philphone:
+  hide_if_away: false
+  icon:
+  mac:
+  name: PhilPhone
+  picture:
+  track: true
+  vendor:

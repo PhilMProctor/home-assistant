@@ -33,7 +33,7 @@ heat_on_minutes:
 heat_off_hour:
   name: Hour
   icon: mdi:timer
-  initial: 8
+  initial: 7
   min: 0
   max: 23
   step: 1
