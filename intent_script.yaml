@@ -54,3 +54,20 @@
           {%- endif -%}
         data_template:
           entity_id: "switch.{{Room}}_light"
+  TemperatureControl:
+    speech:
+      text: Okay setting the {{ Room }} temperature to {{ number }} degrees
+    action:
+      - service: notify.pushbullet
+        data_template:
+          message: Someone asked via apiai to turn {{ Room }} temperature to {{ number }} degrees
+      - service: input_boolean.turn_off
+        data_template:
+          entity_id: input_boolean.{{Room}}_weekday
+      - service: switch.turn_on
+        data_template:
+          entity_id: switch.{{Room}}_heating
+      - service: python_script.tempset
+        data_template:
+          Room: a.{{Room}}
+          temperature: a.{{number}}

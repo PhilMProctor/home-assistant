@@ -20,6 +20,8 @@ http:
   ssl_key: /etc/letsencrypt/live/hass227.duckdns.org/privkey.pem
   trusted_networks:
     - 10.44.3.0/24
+  ip_ban_enabled: True
+  login_attempts_threshold: 5
 
 # Checks for available updates
 updater:
@@ -32,16 +34,30 @@ conversation:
 
 # Enables support for tracking state changes over time.
 history:
+  exclude:
+    domains:
+      - automation
+      - updater
+    entities:
+      - sensor.last_boot
+      - sensor.date
 
 # View all events in a logbook
 logbook:
 
 # Database housekeeping
 recorder:
-  purge_days: 3
+  purge_interval: 2
+  purge_keep_days: 5
   exclude:
     domains:
-      - sun
+      - automation
+      - scene
+    entities:
+      - sun.sun
+      - sensor.last_boot
+      - sensor.date
+
 
 
 # Track the sun
@@ -61,8 +77,26 @@ automation: !include automations.yaml
 scene: !include scenes.yaml
 binary_sensor: !include binary_sensor.yaml
 input_boolean: !include input_boolean.yaml
-input_slider: !include input_slider.yaml
+input_number: !include input_number.yaml
 alert: !include alert.yaml
+python_script:
+
+google:
+  client_id: !secret g_client_id
+  client_secret: !secret g_client_secret
+  track_new_calendar: True
+
+
+google_assistant:
+  project_id: hass227-5f9ca
+  client_id: !secret g_assist_id
+  access_token: !secret g_assist_access_id
+  exposed_domains:
+    - switch
+    - light
+    - group
+    - scene
+    - sensor
 
 zone:
   name: Home
@@ -211,6 +245,27 @@ android_ip_webcam:
     port: 2271
     scan_interval: 1
     name: 'Hutch'
+    username: 'hass227'
+    password: !secret camera_pw
+    switches:
+      - exposure_lock
+      - ffc
+      - focus
+      - gps_active
+      - night_vision
+      - overlay
+      - torch
+      - whitebalance_lock
+      - video_recording
+    sensors:
+      - battery_level
+      - motion
+      - light
+
+  - host: 10.44.3.126
+    port: 2271
+    scan_interval: 1
+    name: 'Front Door'
     username: 'hass227'
     password: !secret camera_pw
     switches:

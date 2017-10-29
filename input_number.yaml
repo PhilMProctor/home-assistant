@@ -41,7 +41,7 @@ heat_off_hour:
 heat_off_minutes:
   name: Minutes
   icon: mdi:timer
-  initial: 30
+  initial: 0
   min: 0
   max: 59
   step: 5
@@ -65,7 +65,7 @@ hutch_on_minutes:
 hutch_off_hour:
   name: Hour
   icon: mdi:timer
-  initial: 10
+  initial: 9
   min: 0
   max: 23
   step: 1
@@ -73,7 +73,7 @@ hutch_off_hour:
 hutch_off_minutes:
   name: Minutes
   icon: mdi:timer
-  initial: 0
+  initial: 30
   min: 0
   max: 59
   step: 5
@@ -89,7 +89,7 @@ lounge_lights_on_hour:
 lounge_lights_on_minutes:
   name: Minutes
   icon: mdi:timer
-  initial: 0
+  initial: 45
   min: 0
   max: 59
   step: 5

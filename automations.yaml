@@ -9,7 +9,6 @@
     data:
       message: HomeAssistant {{ states('updater.updater') }} is now available
       title: Update HASS
-
 - id: auto02
   alias: Lounge lights on in the evening
   trigger:
@@ -19,7 +18,6 @@
   action:
     service: switch.turn_on
     entity_id: switch.lounge_lights
-
 - id: auto03
   alias: Random - Lounge Lights Off
   trigger:
@@ -32,7 +30,6 @@
   action:
   - delay: '{{ ((range(0, 1) | random) | int) ~ ":" ~ ((range(5, 55) | random) | int)  ~
       ":" ~  ((range(5, 55) | random) | int) }}'
-
 - id: auto04
   alias: Reset lights automation
   trigger:
@@ -41,7 +38,6 @@
   action:
     service: automation.turn_on
     entity_id: automation.lounge_lights_on_in_the_evening
-
 - id: auto05
   alias: Wake Me Up
   trigger:
@@ -73,8 +69,6 @@
       value1: Morning!
   - service: switch.turn_on
     entity_id: switch.master_bedroom_light
-
-
 - id: auto06
   alias: House Heating On
   trigger:
@@ -103,11 +97,10 @@
       entity_id: input_boolean.house_weekday
       state: 'off'
   action:
-    - service: climate.set_temperature
-      data:
-        entity_id: climate.house
-        temperature: 18.0
-
+  - service: climate.set_temperature
+    data:
+      entity_id: climate.house
+      temperature: 18.0
 - id: auto07
   alias: House Heating Off
   trigger:
@@ -136,11 +129,10 @@
       entity_id: input_boolean.house_weekday
       state: 'off'
   action:
-    - service: climate.set_temperature
-      data:
-        entity_id: climate.house
-        temperature: 13
-
+  - service: climate.set_temperature
+    data:
+      entity_id: climate.house
+      temperature: 13
 - id: auto08
   alias: Hutch Heating On
   trigger:
@@ -169,11 +161,10 @@
       entity_id: input_boolean.hutch_weekday
       state: 'off'
   action:
-    - service: climate.set_temperature
-      data:
-        entity_id: climate.hutch
-        temperature: 18.5
-
+  - service: climate.set_temperature
+    data:
+      entity_id: climate.hutch
+      temperature: 18.5
 - id: auto09
   alias: Hutch Heating Off
   trigger:
@@ -202,19 +193,18 @@
       entity_id: input_boolean.hutch_weekday
       state: 'off'
   action:
-    - service: climate.set_temperature
-      data:
-        entity_id: climate.hutch
-        temperature: 1
-
+  - service: climate.set_temperature
+    data:
+      entity_id: climate.hutch
+      temperature: 1
 - id: auto10
   alias: Morning Lounge Lights Off
   trigger:
+  - event: sunrise
+    offset: 01:00:00
     platform: sun
-    event: sunrise
-    offset: 00:45:00
   condition:
-    condition: or
+  - condition: or
     conditions:
     - condition: and
       conditions:
@@ -232,9 +222,8 @@
       entity_id: input_boolean.lounge_lights
       state: 'off'
   action:
+  - entity_id: switch.lounge_lights
     service: switch.turn_off
-    entity_id: switch.lounge_lights
-
 - id: auto11
   alias: Morning Lounge Lights On
   trigger:

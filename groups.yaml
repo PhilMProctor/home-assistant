@@ -184,9 +184,11 @@
       - camera.lounge
       - camera.hall
       - camera.hutch
+      - camera.front_door
       - group.cam1_sensors
       - group.cam2_sensors
       - group.cam3_sensors
+      - group.cam4_sensors
 
   cam1_sensors:
     view: no
@@ -215,6 +217,15 @@
       - switch.hutch_torch
       - switch.hutch_video_recording
 
+  cam4_sensors:
+    view: no
+    name: 'Front Door Camera'
+    entities:
+      - sensor.front_door_motion
+      - sensor.front_door_light_level
+      - switch.front_door_torch
+      - switch.front_door_video_recording
+
   weather:
     view: yes
     name: 'Weather'
@@ -239,8 +250,8 @@
     entities: 
       - automation.wake_me_up
       - sensor.alarm_time
-      - input_slider.alarmhour
-      - input_slider.alarmminutes
+      - input_number.alarmhour
+      - input_number.alarmminutes
       - input_boolean.alarmweekday
 
   house_heating:
@@ -249,10 +260,10 @@
       - climate.house
       - sensor.heat_on_time
       - sensor.heat_off_time
-      - input_slider.heat_on_hour
-      - input_slider.heat_on_minutes
-      - input_slider.heat_off_hour
-      - input_slider.heat_off_minutes
+      - input_number.heat_on_hour
+      - input_number.heat_on_minutes
+      - input_number.heat_off_hour
+      - input_number.heat_off_minutes
       - input_boolean.house_weekday
 
   hutch_heating:
@@ -261,10 +272,10 @@
       - climate.hutch
       - sensor.hutch_on_time
       - sensor.hutch_off_time
-      - input_slider.hutch_on_hour
-      - input_slider.hutch_on_minutes
-      - input_slider.hutch_off_hour
-      - input_slider.hutch_off_minutes
+      - input_number.hutch_on_hour
+      - input_number.hutch_on_minutes
+      - input_number.hutch_off_hour
+      - input_number.hutch_off_minutes
       - input_boolean.hutch_weekday
 
   debug:
@@ -286,6 +297,6 @@
     entities:
       - automation.morning_lounge_lights_on
       - sensor.lounge_lights_on_time
-      - input_slider.lounge_lights_on_hour
-      - input_slider.lounge_lights_on_minutes
+      - input_number.lounge_lights_on_hour
+      - input_number.lounge_lights_on_minutes
       - input_boolean.lounge_lights

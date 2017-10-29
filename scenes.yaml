@@ -20,6 +20,8 @@
         state: off
       switch.hutch_frontfacing_camera:
         state: off
+      switch.hutch_light:
+        state: off
 
   - name: 'Security Active'
     entities:
