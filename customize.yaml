@@ -1,0 +1,153 @@
+sensor.esp1:
+  icon: mdi:wifi
+sensor.esp2:
+  icon: mdi:wifi
+sensor.esp3:
+  icon: mdi:wifi
+sensor.hallway_h:
+  icon: mdi:water
+sensor.hutch_h:
+  icon: mdi:water
+sensor.landing_h:
+  icon: mdi:water
+sensor.admonitrix:
+  icon: mdi:raspberrypi
+sensor.hubble_s:
+  icon: mdi:access-point-network
+sensor.hubble_h:
+  icon: mdi:access-point-network
+sensor.printer:
+  icon: mdi:printer
+sensor.benjamin_xbox:
+  icon: mdi:windows
+sensor.nathan_xbox:
+  icon: mdi:windows
+sensor.phils_phone:
+  icon: mdi:battery
+sensor.sandras_phone:
+  icon: mdi:battery
+sensor.nathans_phone:
+  icon: mdi:battery
+sensor.benjamins_phone:
+  icon: mdi:battery
+device_tracker.2c54cfe5cea6:
+  icon: mdi:cellphone
+device_tracker.502e5ce5a60a:
+  icon: mdi:tablet
+device_tracker.f4f524cc82d3:
+  icon: mdi:cellphone
+device_tracker.94d85915ae3d:
+  icon: mdi:cellphone
+device_tracker.54ef925dad48:
+  icon: mdi:tablet
+sensor.speedtest_download:
+  icon: mdi:download
+sensor.speedtest_upload:
+  icon: mdi:upload
+sensor.speedtest_ping:
+  icon: mdi:speedometer
+sensor.pws_observation_time:
+  friendly_name: Update
+  icon: mdi:clock
+sensor.pws_feelslike_c:
+  friendly_name: Temp Feels Like
+sensor.pws_pressure_mb:
+  friendly_name: Pressure
+  icon: mdi:gauge
+sensor.pws_relative_humidity:
+  friendly_name: Humidity
+  icon: mdi:water
+sensor.pws_temp_c:
+  friendly_name: Temp
+sensor.pws_wind_dir:
+  friendly_name: Wind Direction
+  icon: mdi:compass
+sensor.pws_wind_mph:
+  friendly_name: Wind Speed
+  icon: mdi:weather-windy
+sensor.pws_wind_gust_mph:
+  friendly_name: Wind Gust
+  icon: mdi:weather-windy
+sensor.pws_wind_string:
+  friendly_name: Wind State
+  icon: mdi:weather-windy
+sensor.pws_weather:
+  friendly_name: Weather
+  icon: mdi:weather-partlycloudy
+sensor.monday_1:
+  friendly_name: Period 1
+  icon: mdi:calendar
+sensor.monday_2:
+  friendly_name: Period 2
+  icon: mdi:calendar
+sensor.monday_3:
+  friendly_name: Period 3
+  icon: mdi:calendar
+sensor.monday_4:
+  friendly_name: Period 4
+  icon: mdi:calendar
+sensor.monday_5:
+  friendly_name: Period 5
+  icon: mdi:calendar
+sensor.tuesday_1:
+  friendly_name: Period 1
+  icon: mdi:calendar
+sensor.tuesday_2:
+  friendly_name: Period 2
+  icon: mdi:calendar
+sensor.tuesday_3:
+  friendly_name: Period 3
+  icon: mdi:calendar
+sensor.tuesday_4:
+  friendly_name: Period 4
+  icon: mdi:calendar
+sensor.tuesday_5:
+  friendly_name: Period 5
+  icon: mdi:calendar
+sensor.wednesday_1:
+  friendly_name: Period 1
+  icon: mdi:calendar
+sensor.wednesday_2:
+  friendly_name: Period 2
+  icon: mdi:calendar
+sensor.wednesday_3:
+  friendly_name: Period 3
+  icon: mdi:calendar
+sensor.wednesday_4:
+  friendly_name: Period 4
+  icon: mdi:calendar
+sensor.wednesday_5:
+  friendly_name: Period 5
+  icon: mdi:calendar
+sensor.thurday_1:
+  friendly_name: Period 1
+  icon: mdi:calendar
+sensor.thurday_2:
+  friendly_name: Period 2
+  icon: mdi:calendar
+sensor.thurday_3:
+  friendly_name: Period 3
+  icon: mdi:calendar
+sensor.thurday_4:
+  friendly_name: Period 4
+  icon: mdi:calendar
+sensor.thurday_5:
+  friendly_name: Period 5
+  icon: mdi:calendar
+sensor.friday_1:
+  friendly_name: Period 1
+  icon: mdi:calendar
+sensor.friday_2:
+  friendly_name: Period 2
+  icon: mdi:calendar
+sensor.friday_3:
+  friendly_name: Period 3
+  icon: mdi:calendar
+sensor.friday_4:
+  friendly_name: Period 4
+  icon: mdi:calendar
+sensor.friday_5:
+  friendly_name: Period 5
+  icon: mdi:calendar
+automation.benjamin_xbox_monitor:
+  icon: mdi:gamepad-variant

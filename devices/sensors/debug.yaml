@@ -1,0 +1,4 @@
+  - platform: mqtt
+    state_topic: "hass/debug/node/heating/state"
+    name: "global_house_heating"
+

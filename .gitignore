@@ -5,4 +5,5 @@ home-assistant.log
 *.pyc
 deps/*
 *.bk
+ip_bans.yaml
 
