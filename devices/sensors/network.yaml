@@ -6,6 +6,9 @@
       hubble_s:
         value_template: '{% if is_state("device_tracker.bcf2afd4cc3b", "home") %}Online{% else %}Offline{% endif %}'
         friendly_name: 'hubble_s'
+      admonitrix:
+        value_template: '{% if is_state("device_tracker.admonitrix", "home") %}Online{% else %}Offline{% endif %}'
+        friendly_name: 'Admonitrix'
 
   - platform: speedtest
     minutes: 30

@@ -462,3 +462,12 @@ philphone_philphone:
   picture:
   track: true
   vendor:
+
+80d21d0ff3cd:
+  hide_if_away: false
+  icon:
+  mac: 80:D2:1D:0F:F3:CD
+  name: 80d21d0ff3cd
+  picture:
+  track: true
+  vendor: AzureWave Technology Inc.

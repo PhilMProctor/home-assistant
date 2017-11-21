@@ -92,3 +92,7 @@ sensor.pws_wind_string:
 sensor.pws_weather:
   friendly_name: 'Weather'
   icon: mdi:weather-partlycloudy
+
+sensor.monday_1:
+  friendly_name: 'Period 1'
+  icon: mdi:calendar

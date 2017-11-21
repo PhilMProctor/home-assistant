@@ -101,6 +101,8 @@
     data:
       entity_id: climate.house
       temperature: 18.0
+  - service: automation.turn_on
+    entity_id: automation.heating_off_out_of_zone
 - id: auto07
   alias: House Heating Off
   trigger:
@@ -133,6 +135,8 @@
     data:
       entity_id: climate.house
       temperature: 13
+  - service: automation.turn_off
+    entity_id: automation.heating_off_out_of_zone
 - id: auto08
   alias: Hutch Heating On
   trigger:
@@ -251,3 +255,28 @@
   action:
     service: switch.turn_on
     entity_id: switch.lounge_lights
+- id: auto12
+  alias: Benjamin XBox Monitor
+  initial_state: 'off'
+  trigger:
+  - platform: template
+    value_template: '{{ states.sensor.benjamin_xbox == "Offline" }}'
+  action:
+  - delay: 00:05:00
+  - service: switch.turn_off
+    entity_id: switch.tv
+  - service: scene.turn_on
+    entity_id: scene.bedtime
+- id: auto13
+  alias: Heating Off out of Zone
+  initial_state: 'off'
+  trigger:
+  - platform: template
+    value_template: '{{ states.group.family == "not_home" }}'
+  condition:
+  - condition: state
+    entity_id: switch.house_heating
+    state: 'on'
+  action:
+  - entity_id: switch.house_heating
+    service: switch.turn_off

@@ -9,6 +9,8 @@
 
   - name: 'In the Hutch'
     entities:
+      input_boolean.hutch_weekday:
+        state: off
       switch.hutch_heating:
         state: on
       switch.hutch_frontfacing_camera:
@@ -22,6 +24,8 @@
         state: off
       switch.hutch_light:
         state: off
+      input_boolean.hutch_weekday:
+        state: on
 
   - name: 'Security Active'
     entities:
@@ -39,4 +43,13 @@
       switch.lounge_frontfacing_camera:
         state: on
       switch.hutch_frontfacing_camera:
+        state: on
+
+  - name: 'Warm up the House'
+    entities:
+      automation.heating_off_out_of_zone:
+        state: off
+      input_boolean.house_weekday:
+        state: off
+      switch.house_heating:
         state: on

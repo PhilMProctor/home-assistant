@@ -8,6 +8,35 @@
       - group.family
       - group.weather_overview
       - group.alarmclock
+
+  school_week:
+    name: 'School Week'
+    view: no
+    entities:
+      - group.school_week_mon
+      - group.school_week_tue
+      - group.school_week_wed
+      - group.school_week_thu
+      - group.school_week_fri
+
+  automation:
+    view: yes
+    name: 'Automation'
+    entities:
+      - group.heating
+      - group.lighting
+      - group.scenes
+      - group.house_heating
+      - group.hutch_heating
+      - group.power
+      - group.lounge_lights
+      - group.monitor
+
+  weather:
+    view: yes
+    name: 'Weather'
+    entities:
+      - group.weather_4d
     
   family:
     name: Family
@@ -66,7 +95,7 @@
   eth:
     name: 'Ethernet Network'
     entities:
-      - device_tracker.admonitrix
+      - sensor.admonitrix_ping
 
   infrastructure:
     view: yes
@@ -104,21 +133,9 @@
       - group.devices
       - group.battery
 
-  automation:
-    view: yes
-    name: 'Automation'
-    entities:
-      - group.heating
-      - group.lighting
-      - group.scenes
-      - group.house_heating
-      - group.hutch_heating
-      - group.power
-      - group.lounge_lights
-
   triggers:
     view: no
-    name: Triggers
+    name: 'Automation States'
     entities:
       - automation.lounge_lights_on_in_the_evening
       - automation.house_heating_on
@@ -153,6 +170,7 @@
       - scene.house_heating_on
       - scene.security_active
       - scene.security_inactive
+      - scene.warm_up_the_house
 
   weather_overview:
     view: no
@@ -226,12 +244,6 @@
       - switch.front_door_torch
       - switch.front_door_video_recording
 
-  weather:
-    view: yes
-    name: 'Weather'
-    entities:
-      - group.weather_4d
-
   weather_4d:
     view: no
     name: '4 Day Forecast'
@@ -283,7 +295,7 @@
     view: yes
     entities:
       - group.triggers
-      - group.heating
+
 
   power:
     name: 'Power'
@@ -300,3 +312,60 @@
       - input_number.lounge_lights_on_hour
       - input_number.lounge_lights_on_minutes
       - input_boolean.lounge_lights
+
+  school_week_mon:
+    name: 'Monday'
+    view: no
+    entities:
+      - sensor.monday_1
+      - sensor.monday_2
+      - sensor.monday_3
+      - sensor.monday_4
+      - sensor.monday_5
+
+  school_week_tue:
+    name: 'Tuesday'
+    view: no
+    entities:
+      - sensor.tuesday_1
+      - sensor.tuesday_2
+      - sensor.tuesday_3
+      - sensor.tuesday_4
+      - sensor.tuesday_5
+
+  school_week_wed:
+    name: 'Wednesday'
+    view: no
+    entities:
+      - sensor.wednesday_1
+      - sensor.wednesday_2
+      - sensor.wednesday_3
+      - sensor.wednesday_4
+      - sensor.wednesday_5
+
+  school_week_thu:
+    name: 'Thursday'
+    view: no
+    entities:
+      - sensor.thursday_1
+      - sensor.thursday_2
+      - sensor.thursday_3
+      - sensor.thursday_4
+      - sensor.thursday_5
+
+  school_week_fri:
+    name: 'Friday'
+    view: no
+    entities:
+      - sensor.friday_1
+      - sensor.friday_2
+      - sensor.friday_3
+      - sensor.friday_4
+      - sensor.friday_5
+
+
+  monitor:
+    name: 'Monitor'
+    view: no
+    entities:
+      - automation.benjamin_xbox_monitor

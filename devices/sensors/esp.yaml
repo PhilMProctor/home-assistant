@@ -9,6 +9,3 @@
       esp3:
         value_template: '{% if is_state("device_tracker.18fe34dabbd5", "home") %}Online{% else %}Offline{% endif %}'
         friendly_name: 'Hutch'
-      admonitrix:
-        value_template: '{% if is_state("device_tracker.b827eb5fe5b2", "home") %}Online{% else %}Offline{% endif %}'
-        friendly_name: 'Admonitrix'

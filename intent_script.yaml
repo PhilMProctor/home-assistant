@@ -71,3 +71,41 @@
         data_template:
           Room: a.{{Room}}
           temperature: a.{{number}}
+  SchoolDay:
+    speech:
+      text: >
+        {%- if day == "Monday" -%}
+        {% set day = day.lower() %}
+          The lessons for Monday are period 1 {{ states('sensor.monday_1') }},
+          period 2 {{ states('sensor.monday_2') }},
+          period 3 {{ states('sensor.monday_3') }},
+          period 4 {{ states('sensor.monday_4') }},
+          and period 5 {{ states('sensor.monday_5') }}
+        {%- elif day == "Tuesday" -%}
+          The lessons for Tuesday are period 1 {{ states('sensor.tuesday_1') }},
+          period 2 {{ states('sensor.tuesday_2') }},
+          period 3 {{ states('sensor.tuesday_3') }},
+          period 4 {{ states('sensor.tuesday_4') }},
+          and period 5 {{ states('sensor.tuesday_5') }}
+        {%- elif day == "Wednesday" -%}
+          The lessons for Wednesday are period 1 {{ states('sensor.wednesday_1') }},
+          period 2 {{ states('sensor.wednesday_2') }},
+          period 3 {{ states('sensor.wednesday_3') }},
+          period 4 {{ states('sensor.wednesday_4') }},
+          and period 5 {{ states('sensor.wednesday_5') }}
+        {%- elif day == "Thursday" -%}
+          The lessons for Thursday are period 1 {{ states('sensor.thursday_1') }},
+          period 2 {{ states('sensor.thursday_2') }},
+          period 3 {{ states('sensor.thursday_3') }},
+          period 4 {{ states('sensor.thursday_4') }},
+          and period 5 {{ states('sensor.thursday_5') }}
+        %- elif day == "Friday" -%}
+          The lessons for Friday are period 1 {{ states('sensor.friday_1') }},
+          period 2 {{ states('sensor.friday_2') }},
+          period 3 {{ states('sensor.friday_3') }},
+          period 4 {{ states('sensor.friday_4') }},
+          and period 5 {{ states('sensor.friday_5') }}
+        {%- else -%}
+        Sorry I don't recognise the day.
+        {%- endif -%}
+
